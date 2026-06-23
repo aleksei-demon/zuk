@@ -9,7 +9,7 @@ window.CATALOGS.houses = {
     items: [
         {
             name: "Небоскрёб",
-            img: "IMG_houses_houses/neboskreb.jpg",
+            img: "IMG_houses/neboskreb.jpg",
             desc: `
             Небоскрёб — это очень высокое здание.
             В нём может быть десятки и даже сотни этажей.
@@ -26,7 +26,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Дом",
-            img: "IMG_houses_houses/dom.jpg",
+            img: "IMG_houses/dom.jpg",
             desc: `
             Дом — это место, где живут люди.
             В доме можно отдыхать, есть и спать.
@@ -43,7 +43,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Длинный дом",
-            img: "IMG_houses_houses/dlinnyy_dom.jpg",
+            img: "IMG_houses/dlinnyy_dom.jpg",
             desc: `
             Длинный дом представляет собой очень длинное строение.
             В прошлом в таких домах жили большие семьи.
@@ -60,7 +60,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Замок",
-            img: "IMG_houses_houses/zamok.jpg",
+            img: "IMG_houses/zamok.jpg",
             desc: `
             Замок — это укреплённое жилище.
             Раньше в замках жили короли и рыцари.
@@ -77,7 +77,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Дворец",
-            img: "IMG_houses_houses/dvorets.jpg",
+            img: "IMG_houses/dvorets.jpg",
             desc: `
             Дворец — это большое и красивое здание.
             В дворцах жили короли, цари и правители.
@@ -94,7 +94,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Автодом",
-            img: "IMG_houses_houses/avtodom.jpg",
+            img: "IMG_houses/avtodom.jpg",
             desc: `
             Автодом — это дом на колёсах.
             В нём можно путешествовать и жить.
@@ -111,7 +111,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Землянка",
-            img: "IMG_houses_houses/zemlyanka.jpg",
+            img: "IMG_houses/zemlyanka.jpg",
             desc: `
             Землянка строится частично или полностью под землёй.
             Она хорошо сохраняет тепло зимой.
@@ -128,7 +128,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Палатка",
-            img: "IMG_houses_houses/palatka.jpg",
+            img: "IMG_houses/palatka.jpg",
             desc: `
             Палатка — это переносное временное жилище.
             Её используют туристы и путешественники.
@@ -145,7 +145,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Башня",
-            img: "IMG_houses_houses/bashnya.jpg",
+            img: "IMG_houses/bashnya.jpg",
             desc: `
             Башня — это высокое узкое сооружение.
             Башни строили для наблюдения за местностью.
@@ -162,7 +162,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Маяк",
-            img: "IMG_houses_houses/mayak.jpg",
+            img: "IMG_houses/mayak.jpg",
             desc: `
             Маяк помогает кораблям находить путь.
             Обычно его строят возле моря.
@@ -179,7 +179,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Лабиринт",
-            img: "IMG_houses_houses/labirint.jpg",
+            img: "IMG_houses/labirint.jpg",
             desc: `
             Лабиринт состоит из множества дорожек и поворотов.
             В нём нужно найти путь к выходу.
@@ -196,7 +196,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Цирк",
-            img: "IMG_houses_houses/cirk.jpg",
+            img: "IMG_houses/cirk.jpg",
             desc: `
             Цирк — это место для представлений.
             В цирке выступают артисты и акробаты.
@@ -213,7 +213,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Дом на дереве",
-            img: "IMG_houses_houses/dom_na_dereve.jpg",
+            img: "IMG_houses/dom_na_dereve.jpg",
             desc: `
             Дом на дереве строится среди ветвей.
             Он может использоваться для игр и отдыха.
@@ -230,7 +230,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Бункер",
-            img: "IMG_houses_houses/bunker.jpg",
+            img: "IMG_houses/bunker.jpg",
             desc: `
             Бункер — это прочное защитное сооружение.
             Его строят под землёй или внутри холмов.
@@ -247,7 +247,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Дебаркадер",
-            img: "IMG_houses_houses/debarkader.jpg",
+            img: "IMG_houses/debarkader.jpg",
             desc: `
             Дебаркадер — это плавучее сооружение на воде.
             Он может служить пристанью для кораблей.
@@ -264,7 +264,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Гостиница",
-            img: "IMG_houses_houses/gostinitsa.jpg",
+            img: "IMG_houses/gostinitsa.jpg",
             desc: `
             Гостиница предназначена для временного проживания людей.
             В ней путешественники снимают номера.
