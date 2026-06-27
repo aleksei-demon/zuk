@@ -228,7 +228,7 @@ window.CATALOGS.fig = {
         },
         {
             name: "Сектор",
-            img: "IMG_fig/sector.jpg",
+            img: "IMG_fig/sector.png",
             desc: `
             Сектор — это часть круга.
             Он похож на кусочек пиццы или торта.
