@@ -383,7 +383,7 @@ window.CATALOGS.fish = {
 
         {
             name: "Косатка",
-            img: "IMG/kosatka.jpg",
+            img: "IMG_fish/kosatka.jpg",
             desc: `
             Косатка — самый крупный представитель семейства дельфиновых.
             Она живёт во всех океанах Земли.
@@ -400,7 +400,7 @@ window.CATALOGS.fish = {
 
         {
             name: "Китовая акула",
-            img: "IMG/kitovaya_akula.jpg",
+            img: "IMG_fish/kitovaya_akula.jpg",
             desc: `
             Китовая акула — самая большая рыба в мире.
             Она может вырастать длиннее школьного автобуса.
@@ -417,7 +417,7 @@ window.CATALOGS.fish = {
 
         {
             name: "Золотая рыбка",
-            img: "IMG/zolotaya_rybka.jpg",
+            img: "IMG_fish/zolotaya_rybka.jpg",
             desc: `
             Золотая рыбка живёт в аквариумах и декоративных прудах.
             Она бывает золотой, белой, красной и даже чёрной.
@@ -433,7 +433,7 @@ window.CATALOGS.fish = {
 
         {
             name: "Дискус",
-            img: "IMG/diskus.jpg",
+            img: "IMG_fish/diskus.jpg",
             desc: `
             Дискус живёт в реке Амазонке.
             Его тело почти круглое и напоминает диск.
@@ -449,7 +449,7 @@ window.CATALOGS.fish = {
 
         {
             name: "Иглобрюх",
-            img: "IMG/iglobryuh.jpg",
+            img: "IMG_fish/iglobryuh.jpg",
             desc: `
             Иглобрюх умеет раздуваться как воздушный шар.
             Так он защищается от врагов.
@@ -465,7 +465,7 @@ window.CATALOGS.fish = {
 
         {
             name: "Каракатица",
-            img: "IMG/karakatitsa.jpg",
+            img: "IMG_fish/karakatitsa.jpg",
             desc: `
             Каракатица относится к головоногим моллюскам.
             Она живёт в морях.
@@ -481,7 +481,7 @@ window.CATALOGS.fish = {
 
         {
             name: "Гигантский кальмар",
-            img: "IMG/gigantskiy_kalmar.jpg",
+            img: "IMG_fish/gigantskiy_kalmar.jpg",
             desc: `
             Гигантский кальмар живёт в глубинах океана.
             Это одно из самых загадочных животных Земли.
@@ -497,7 +497,7 @@ window.CATALOGS.fish = {
 
         {
             name: "Краб-паук",
-            img: "IMG/krab_pauk.jpg",
+            img: "IMG_fish/krab_pauk.jpg",
             desc: `
             Краб-паук живёт возле берегов Японии.
             У него очень длинные ноги.
@@ -513,7 +513,7 @@ window.CATALOGS.fish = {
 
         {
             name: "Морж",
-            img: "IMG/morzh.jpg",
+            img: "IMG_fish/morzh.jpg",
             desc: `
             Морж живёт в холодных северных морях.
             Его легко узнать по длинным клыкам.
@@ -529,7 +529,7 @@ window.CATALOGS.fish = {
 
         {
             name: "Морская черепаха",
-            img: "IMG/morskaya_cherepaha.jpg",
+            img: "IMG_fish/morskaya_cherepaha.jpg",
             desc: `
             Морская черепаха большую часть жизни проводит в океане.
             Её тело защищает прочный панцирь.
@@ -545,7 +545,7 @@ window.CATALOGS.fish = {
 
         {
             name: "Медуза",
-            img: "IMG/meduza.jpg",
+            img: "IMG_fish/meduza.jpg",
             desc: `
             Медуза живёт во всех океанах мира.
             Её тело почти полностью состоит из воды.
@@ -561,7 +561,7 @@ window.CATALOGS.fish = {
 
         {
             name: "Наутилус",
-            img: "IMG/nautilus.jpg",
+            img: "IMG_fish/nautilus.jpg",
             desc: `
             Наутилус — древний головоногий моллюск.
             Он живёт в тёплых водах Тихого океана.

@@ -571,7 +571,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Автобусный парк",
-            img: "IMG/avtobusnyy_park.jpg",
+            img: "IMG_houses/avtobusnyy_park.jpg",
             desc: `
             Автобусный парк — это место, где живут автобусы.
             После работы автобусы возвращаются туда на стоянку.
@@ -588,7 +588,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Пожарное депо",
-            img: "IMG/pozharnoe_depo.jpg",
+            img: "IMG_houses/pozharnoe_depo.jpg",
             desc: `
             Пожарное депо — это дом для пожарных машин.
             Здесь дежурят пожарные спасатели.
@@ -605,7 +605,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Самолётный ангар",
-            img: "IMG/samoletnyy_angar.jpg",
+            img: "IMG_houses/samoletnyy_angar.jpg",
             desc: `
             Ангар — это большой дом для самолётов.
             В ангарах самолёты защищены от дождя и снега.
@@ -622,7 +622,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Док",
-            img: "IMG/dok.jpg",
+            img: "IMG_houses/dok.jpg",
             desc: `
             Док — это специальное место для ремонта кораблей.
             Он располагается у воды.
@@ -639,7 +639,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Судоверфь",
-            img: "IMG/sudoverf.jpg",
+            img: "IMG_houses/sudoverf.jpg",
             desc: `
             Судоверфь — это место, где строят корабли.
             Здесь создают лодки, катера и огромные суда.
@@ -656,7 +656,7 @@ window.CATALOGS.houses = {
 
         {
             name: "Полицейский участок",
-            img: "IMG/politseyskiy_uchastok.jpg",
+            img: "IMG_houses/politseyskiy_uchastok.jpg",
             desc: `
             Полицейский участок — это место работы полицейских.
             Сюда обращаются люди за помощью.
