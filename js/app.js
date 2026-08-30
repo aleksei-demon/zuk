@@ -24,6 +24,19 @@ const description = document.getElementById("description");
 const counter = document.getElementById("counter");
 
 // ========================================
+// ПОЛУЧЕНИЕ ЧИСТОГО ТЕКСТА ИЗ HTML
+// ========================================
+
+function getDescriptionText(html) {
+
+    const temp = document.createElement("div");
+
+    temp.innerHTML = html;
+
+    return temp.textContent || temp.innerText || "";
+}
+
+// ========================================
 // СОЗДАНИЕ МЕНЮ
 // ========================================
 
@@ -91,7 +104,9 @@ function showCard() {
 
     photo.src = item.img;
 
-    description.textContent = item.desc;
+    // Разрешаем HTML внутри описания.
+    // Благодаря этому работают ссылки, <br> и другие элементы.
+    description.innerHTML = item.desc;
 
     counter.textContent =
         `${currentIndex + 1} / ${currentCatalog.items.length}`;
@@ -137,9 +152,13 @@ function speakCurrent() {
 
     const item = currentCatalog.items[currentIndex];
 
+    // Убираем HTML-теги из описания перед озвучкой
+    const cleanDescription =
+        getDescriptionText(item.desc);
+
     const text =
         item.name + ". " +
-        item.desc;
+        cleanDescription;
 
     const utter =
         new SpeechSynthesisUtterance(text);
