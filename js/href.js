@@ -41,7 +41,7 @@ window.CATALOGS.href = {
         },
         {
             name: "Хоррор",
-            img: "IMG_proj/.jpg",
+            img: "IMG_proj/horr.jpg",
             desc: `      
       <br><br>
       <a href="https://aleksei-demon.github.io/horr/" target="_blank">
@@ -52,7 +52,7 @@ window.CATALOGS.href = {
 
         {
             name: "Викторина",
-            img: "IMG_proj/.jpg",
+            img: "IMG_proj/vic.jpg",
             desc: `      
       <br><br>
       <a href="https://aleksei-demon.github.io/vic/" target="_blank">
@@ -63,7 +63,7 @@ window.CATALOGS.href = {
 
         {
             name: "Космос",
-            img: "IMG_proj/.jpg",
+            img: "IMG_proj/kosm.jpg",
             desc: `      
       <br><br>
       <a href="https://aleksei-demon.github.io/kosm/" target="_blank">
@@ -74,7 +74,7 @@ window.CATALOGS.href = {
 
         {
             name: "X-zerO",
-            img: "IMG_proj/.jpg",
+            img: "IMG_proj/x_zer.jpg",
             desc: `      
       <br><br>
       <a href="https://aleksei-demon.github.io/X-zerO/" target="_blank">
@@ -85,7 +85,7 @@ window.CATALOGS.href = {
 
         {
             name: "Новый Год",
-            img: "IMG_proj/.jpg",
+            img: "IMG_proj/newy.jpg",
             desc: `      
       <br><br>
       <a href="https://aleksei-demon.github.io/newy/" target="_blank">
@@ -96,7 +96,7 @@ window.CATALOGS.href = {
 
         {
             name: "77 лет",
-            img: "IMG_proj/.jpg",
+            img: "IMG_proj/77years.jpg",
             desc: `      
       <br><br>
       <a href="https://aleksei-demon.github.io/77years/" target="_blank">
@@ -107,7 +107,7 @@ window.CATALOGS.href = {
 
         {
             name: "игра в дурака",
-            img: "IMG_proj/.jpg",
+            img: "IMG_proj/full.jpg",
             desc: `      
       <br><br>
       <a href="https://aleksei-demon.github.io/full/" target="_blank">
@@ -118,7 +118,7 @@ window.CATALOGS.href = {
 
         {
             name: "Куб",
-            img: "IMG_proj/.jpg",
+            img: "IMG_proj/three.jpg",
             desc: `      
       <br><br>
       <a href="https://aleksei-demon.github.io/three/" target="_blank">
@@ -129,7 +129,7 @@ window.CATALOGS.href = {
 
         {
             name: "Тетрис",
-            img: "IMG_proj/.jpg",
+            img: "IMG_proj/demc.png",
             desc: `      
       <br><br>
       <a href="https://aleksei-demon.github.io/demc/" target="_blank">
