@@ -231,6 +231,146 @@
                 font-size: 40px;
             }
         }
+
+
+
+
+        /* ========================================
+   РЕЖИМ: КАРТИНКА + НАЗВАНИЕ
+   Используется, если у объекта нет desc
+   ======================================== */
+
+
+        /* viewerScreen остаётся обычным экраном.
+   Меняем только внутреннее содержимое карточки. */
+
+        #viewerScreen.simpleImageMode .content {
+            overflow: hidden;
+        }
+
+
+        /* ========================================
+   HEADER
+   ======================================== */
+
+        #viewerScreen.simpleImageMode .header {
+
+            flex: 1;
+
+            min-height: 0;
+
+            display: flex;
+            flex-direction: column;
+
+            align-items: center;
+            justify-content: center;
+
+            gap: 10px;
+
+            padding: 10px;
+
+            overflow: hidden;
+        }
+
+
+        /* ========================================
+   КАРТИНКА
+   ======================================== */
+
+        #viewerScreen.simpleImageMode #photo {
+
+            /* Максимально используем доступное место */
+
+            flex: 1;
+
+            min-height: 0;
+            min-width: 0;
+
+            width: 100%;
+            height: 100%;
+
+            object-fit: contain;
+
+            display: block;
+
+            border-radius: 15px;
+            border: 2px solid #ddd;
+        }
+
+
+        /* ========================================
+   НАЗВАНИЕ
+   ======================================== */
+
+        #viewerScreen.simpleImageMode #nameBox {
+
+            flex: 0 0 auto;
+
+            width: 100%;
+
+            min-height: 55px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            text-align: center;
+
+            font-size: clamp(24px, 4vw, 42px);
+            font-weight: bold;
+
+            padding: 8px;
+
+            border: 2px solid #ddd;
+            border-radius: 15px;
+
+            order: 2;
+        }
+
+
+        /* ========================================
+   ОПИСАНИЕ
+   ======================================== */
+
+        #viewerScreen.simpleImageMode #description {
+
+            display: none !important;
+        }
+
+
+        /* ========================================
+   МОБИЛЬНЫЙ РЕЖИМ
+   ======================================== */
+
+        @media(max-width:700px) {
+
+            #viewerScreen.simpleImageMode .header {
+
+                gap: 8px;
+
+                padding: 8px;
+            }
+
+
+            #viewerScreen.simpleImageMode #photo {
+
+                width: 100%;
+                height: 100%;
+
+                object-fit: contain;
+            }
+
+
+            #viewerScreen.simpleImageMode #nameBox {
+
+                min-height: 50px;
+
+                font-size: clamp(22px, 7vw, 34px);
+
+                padding: 6px;
+            }
+        }
     </style>
 </head>
 
@@ -315,6 +455,7 @@
     <script src="js/pok.js"></script>
     <script src="js/href.js"></script>
     <script src="js/roadSigns.js"></script>
+    <script src="js/risunki.js"></script>
 
     <!-- ==========================
      ДВИЖОК

@@ -1,3 +1,4 @@
+
 // ========================================
 // СОСТОЯНИЕ
 // ========================================
@@ -64,6 +65,45 @@ function hasImageExtension(path) {
 
 
 // ========================================
+// ПРОВЕРКА: ЕСТЬ ЛИ ОПИСАНИЕ
+// ========================================
+//
+// Если ключ desc отсутствует
+// или описание пустое,
+// используется режим:
+// КАРТИНКА + НАЗВАНИЕ
+// ========================================
+
+function hasDescription(item) {
+
+    return (
+        Object.prototype.hasOwnProperty.call(item, "desc") &&
+        typeof item.desc === "string" &&
+        item.desc.trim() !== ""
+    );
+}
+
+
+// ========================================
+// ВЫБОР РЕЖИМА КАРТОЧКИ
+// ========================================
+
+function updateCardMode(item) {
+
+    if (hasDescription(item)) {
+
+        viewerScreen.classList.remove("simpleImageMode");
+
+    } else {
+
+        viewerScreen.classList.add("simpleImageMode");
+    }
+}
+
+
+
+
+// ========================================
 // ЗАГРУЗКА ИЗОБРАЖЕНИЯ
 // ========================================
 //
@@ -84,6 +124,7 @@ function loadImage(imageElement, path) {
 
     // Если расширение уже указано,
     // используем старое поведение.
+
     if (hasImageExtension(path)) {
 
         imageElement.src = path;
@@ -212,6 +253,72 @@ function backToMenu() {
 
 
 // ========================================
+// ОПРЕДЕЛЕНИЕ ТИПА КАРТОЧКИ
+// ========================================
+//
+// Если desc существует —
+// обычная карточка с описанием.
+//
+// Если desc отсутствует —
+// режим "картинка + название".
+// ========================================
+
+function hasDescription(item) {
+
+    return (
+        Object.prototype.hasOwnProperty.call(item, "desc") &&
+        item.desc !== null &&
+        item.desc !== undefined &&
+        String(item.desc).trim() !== ""
+    );
+}
+
+
+// ========================================
+// ПЕРЕКЛЮЧЕНИЕ РЕЖИМА КАРТОЧКИ
+// ========================================
+
+function updateCardMode(item) {
+
+    const simpleImageMode =
+        !hasDescription(item);
+
+
+    // Класс ставится на viewerScreen.
+    //
+    // CSS сможет полностью изменить
+    // расположение элементов.
+
+    viewerScreen.classList.toggle(
+        "simpleImageMode",
+        simpleImageMode
+    );
+
+
+    // Название всегда остаётся видимым.
+
+    nameBox.style.display = "block";
+
+
+    // В режиме картинки без описания
+    // блок описания скрываем.
+
+    if (simpleImageMode) {
+
+        description.style.display = "none";
+
+    } else {
+
+        description.style.display = "";
+    }
+}
+
+
+// ========================================
+// ПОКАЗ КАРТОЧКИ
+// ========================================
+
+// ========================================
 // ПОКАЗ КАРТОЧКИ
 // ========================================
 
@@ -221,13 +328,24 @@ function showCard() {
         currentCatalog.items[currentIndex];
 
 
-    // Название каталога
+    // ====================================
+    // РЕЖИМ КАРТОЧКИ
+    // ====================================
+
+    updateCardMode(item);
+
+
+    // ====================================
+    // НАЗВАНИЕ КАТАЛОГА
+    // ====================================
 
     catalogTitle.textContent =
         currentCatalog.title;
 
 
-    // Название объекта
+    // ====================================
+    // НАЗВАНИЕ ОБЪЕКТА
+    // ====================================
 
     nameBox.textContent =
         item.name;
@@ -243,18 +361,16 @@ function showCard() {
     // ====================================
     // ОПИСАНИЕ
     // ====================================
-    //
-    // Используем innerHTML,
-    // чтобы работали:
-    //
-    // <br>
-    // <a href="...">
-    // <strong>
-    // и другие HTML-элементы.
-    // ====================================
 
-    description.innerHTML =
-        item.desc;
+    if (hasDescription(item)) {
+
+        description.innerHTML =
+            item.desc;
+
+    } else {
+
+        description.innerHTML = "";
+    }
 
 
     // ====================================
@@ -308,6 +424,10 @@ function prevCard() {
 // ОЗВУЧКА
 // ========================================
 
+// ========================================
+// ОЗВУЧКА
+// ========================================
+
 function speakCurrent() {
 
     speechSynthesis.cancel();
@@ -316,7 +436,30 @@ function speakCurrent() {
         currentCatalog.items[currentIndex];
 
 
-    // Убираем HTML-теги перед озвучкой.
+    // ====================================
+    // Если описания нет —
+    // озвучиваем только название.
+    // ====================================
+
+    if (!hasDescription(item)) {
+
+        const utter =
+            new SpeechSynthesisUtterance(item.name);
+
+        utter.lang = "ru-RU";
+
+        utter.rate = 0.95;
+
+        speechSynthesis.speak(utter);
+
+        return;
+    }
+
+
+    // ====================================
+    // Есть описание —
+    // озвучиваем название + описание.
+    // ====================================
 
     const cleanDescription =
         getDescriptionText(item.desc);
@@ -390,7 +533,7 @@ document.addEventListener("keydown", e => {
     // Escape
 
     if (e.key === "Escape")
-        backToMenu();
+        backToMenu;
 
 
     // Пробел — озвучка
@@ -409,3 +552,4 @@ document.addEventListener("keydown", e => {
 // ========================================
 
 buildMenu();
+
