@@ -1,555 +1,500 @@
+/**
+ * POST-APOCALYPTIC CARD ENGINE
+ * File: js/app.js
+ * Version: 1.0
+ */
 
-// ========================================
-// СОСТОЯНИЕ
-// ========================================
+(function () {
+    'use strict';
 
-let currentCatalogKey = null;
-let currentCatalog = null;
-let currentIndex = 0;
+    // ============================================================
+    // 1. STATE MANAGEMENT
+    // ============================================================
+    var currentCatalogKey = null;
+    var currentCatalog = null;
+    var currentIndex = 0;
+    var imageLoadToken = 0;
+    var speechSupported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
 
+    // Supported image formats for auto-repair / extension resolution
+    var SUPPORTED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'svg'];
 
-// ========================================
-// ЭЛЕМЕНТЫ
-// ========================================
+    // ============================================================
+    // 2. DOM ELEMENTS CACHE
+    // ============================================================
+    var DOM = {};
 
-const menuScreen = document.getElementById("menuScreen");
-const viewerScreen = document.getElementById("viewerScreen");
+    function cacheDOMElements() {
+        DOM.menuScreen = document.getElementById('menuScreen');
+        DOM.catalogGrid = document.getElementById('catalogGrid');
+        DOM.viewerScreen = document.getElementById('viewerScreen');
 
-const catalogGrid = document.getElementById("catalogGrid");
+        DOM.prevBtn = document.getElementById('prevBtn');
+        DOM.nextBtn = document.getElementById('nextBtn');
+        DOM.backBtn = document.getElementById('backBtn');
 
-const catalogTitle = document.getElementById("catalogTitle");
+        DOM.catalogTitle = document.getElementById('catalogTitle');
+        DOM.nameBox = document.getElementById('nameBox');
+        DOM.photo = document.getElementById('photo');
+        DOM.description = document.getElementById('description');
 
-const nameBox = document.getElementById("nameBox");
-const photo = document.getElementById("photo");
-const description = document.getElementById("description");
-
-const counter = document.getElementById("counter");
-
-
-// ========================================
-// ПОДДЕРЖИВАЕМЫЕ ФОРМАТЫ ИЗОБРАЖЕНИЙ
-// ========================================
-
-const imageFormats = [
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".webp",
-    ".gif",
-    ".avif"
-];
-
-
-// ========================================
-// ПОЛУЧЕНИЕ ЧИСТОГО ТЕКСТА ИЗ HTML
-// ========================================
-
-function getDescriptionText(html) {
-
-    const temp = document.createElement("div");
-
-    temp.innerHTML = html;
-
-    return temp.textContent || temp.innerText || "";
-}
-
-
-// ========================================
-// ПРОВЕРКА: ЕСТЬ ЛИ У ПУТИ РАСШИРЕНИЕ
-// ========================================
-
-function hasImageExtension(path) {
-
-    return /\.(jpg|jpeg|png|webp|gif|avif)$/i.test(path);
-}
-
-
-// ========================================
-// ПРОВЕРКА: ЕСТЬ ЛИ ОПИСАНИЕ
-// ========================================
-//
-// Если ключ desc отсутствует
-// или описание пустое,
-// используется режим:
-// КАРТИНКА + НАЗВАНИЕ
-// ========================================
-
-function hasDescription(item) {
-
-    return (
-        Object.prototype.hasOwnProperty.call(item, "desc") &&
-        typeof item.desc === "string" &&
-        item.desc.trim() !== ""
-    );
-}
-
-
-// ========================================
-// ВЫБОР РЕЖИМА КАРТОЧКИ
-// ========================================
-
-function updateCardMode(item) {
-
-    if (hasDescription(item)) {
-
-        viewerScreen.classList.remove("simpleImageMode");
-
-    } else {
-
-        viewerScreen.classList.add("simpleImageMode");
-    }
-}
-
-
-
-
-// ========================================
-// ЗАГРУЗКА ИЗОБРАЖЕНИЯ
-// ========================================
-//
-// Можно передавать:
-//
-// IMG/bug.jpg
-//
-// или:
-//
-// IMG/bug
-//
-// Если расширение не указано,
-// приложение самостоятельно перебирает
-// доступные форматы.
-// ========================================
-
-function loadImage(imageElement, path) {
-
-    // Если расширение уже указано,
-    // используем старое поведение.
-
-    if (hasImageExtension(path)) {
-
-        imageElement.src = path;
-
-        return;
+        DOM.speakBtn = document.getElementById('speakBtn');
+        DOM.counter = document.getElementById('counter');
     }
 
+    // ============================================================
+    // 3. UTILITY & VALIDATION FUNCTIONS
+    // ============================================================
 
-    // Начинаем с первого формата.
+    function isValidCatalog(catalog) {
+        return Boolean(
+            catalog &&
+            typeof catalog === 'object' &&
+            Array.isArray(catalog.items)
+        );
+    }
 
-    let formatIndex = 0;
+    function getCatalogTitle(key, catalog) {
+        if (catalog && typeof catalog.title === 'string' && catalog.title.trim().length > 0) {
+            // Удаляем BOM (\uFEFF) и невидимые служебные символы из начала и конца строки
+            return catalog.title.replace(/^[\uFEFF\u200B]+|[\uFEFF\u200B]+$/g, '').trim();
+        }
+        return key;
+    }
 
+    function isNonEmptyString(val) {
+        return typeof val === 'string' && val.trim().length > 0;
+    }
 
-    function tryNextFormat() {
+    function hasName(item) {
+        return Boolean(item && isNonEmptyString(item.name));
+    }
 
-        // Все форматы закончились.
-        // Картинка не найдена.
+    function hasDescription(item) {
+        return Boolean(item && isNonEmptyString(item.desc));
+    }
 
-        if (formatIndex >= imageFormats.length) {
+    function hasImage(item) {
+        return Boolean(item && isNonEmptyString(item.img));
+    }
 
-            imageElement.removeAttribute("src");
+    function hasLink(item) {
+        return Boolean(item && isNonEmptyString(item.a));
+    }
 
-            imageElement.alt = "Изображение не найдено";
+    // Strip HTML markup for speech output
+    function stripHTML(htmlString) {
+        if (!htmlString) return '';
+        var tmp = document.createElement('div');
+        tmp.innerHTML = htmlString;
+        return tmp.textContent || tmp.innerText || '';
+    }
 
+    // ============================================================
+    // 4. MENU BUILDER & CATALOG NAVIGATION
+    // ============================================================
+
+    function buildMenu() {
+        if (!DOM.catalogGrid) return;
+        DOM.catalogGrid.innerHTML = '';
+
+        var catalogs = window.CATALOGS;
+        if (!catalogs || typeof catalogs !== 'object') {
             return;
         }
 
+        Object.keys(catalogs).forEach(function (key) {
+            var cat = catalogs[key];
+            if (!isValidCatalog(cat)) {
+                return; // Omit malformed catalogs
+            }
 
-        const testImage = new Image();
+            var btn = document.createElement('button');
+            btn.className = 'catalogBtn';
+            btn.textContent = getCatalogTitle(key, cat);
+            btn.addEventListener('click', function () {
+                openCatalog(key);
+            });
 
-        const currentPath =
-            path + imageFormats[formatIndex];
-
-
-        // Картинка найдена.
-
-        testImage.onload = () => {
-
-            imageElement.src = currentPath;
-
-            imageElement.alt = "";
-
-        };
-
-
-        // Формат не найден.
-        // Пробуем следующий.
-
-        testImage.onerror = () => {
-
-            formatIndex++;
-
-            tryNextFormat();
-        };
-
-
-        testImage.src = currentPath;
+            DOM.catalogGrid.appendChild(btn);
+        });
     }
 
-
-    tryNextFormat();
-}
-
-
-// ========================================
-// СОЗДАНИЕ МЕНЮ
-// ========================================
-
-function buildMenu() {
-
-    catalogGrid.innerHTML = "";
-
-    for (const key in window.CATALOGS) {
-
-        const catalog = window.CATALOGS[key];
-
-        const button = document.createElement("button");
-
-        button.className = "catalogBtn";
-
-        button.textContent = catalog.title;
-
-        button.onclick = () => {
-
-            openCatalog(key);
-
-        };
-
-        catalogGrid.appendChild(button);
-    }
-}
-
-
-// ========================================
-// ОТКРЫТЬ КАТАЛОГ
-// ========================================
-
-function openCatalog(key) {
-
-    currentCatalogKey = key;
-
-    currentCatalog = window.CATALOGS[key];
-
-    currentIndex = 0;
-
-    menuScreen.style.display = "none";
-
-    viewerScreen.style.display = "block";
-
-    showCard();
-}
-
-
-// ========================================
-// НАЗАД В МЕНЮ
-// ========================================
-
-function backToMenu() {
-
-    speechSynthesis.cancel();
-
-    viewerScreen.style.display = "none";
-
-    menuScreen.style.display = "flex";
-}
-
-
-// ========================================
-// ОПРЕДЕЛЕНИЕ ТИПА КАРТОЧКИ
-// ========================================
-//
-// Если desc существует —
-// обычная карточка с описанием.
-//
-// Если desc отсутствует —
-// режим "картинка + название".
-// ========================================
-
-function hasDescription(item) {
-
-    return (
-        Object.prototype.hasOwnProperty.call(item, "desc") &&
-        item.desc !== null &&
-        item.desc !== undefined &&
-        String(item.desc).trim() !== ""
-    );
-}
-
-
-// ========================================
-// ПЕРЕКЛЮЧЕНИЕ РЕЖИМА КАРТОЧКИ
-// ========================================
-
-function updateCardMode(item) {
-
-    const simpleImageMode =
-        !hasDescription(item);
-
-
-    // Класс ставится на viewerScreen.
-    //
-    // CSS сможет полностью изменить
-    // расположение элементов.
-
-    viewerScreen.classList.toggle(
-        "simpleImageMode",
-        simpleImageMode
-    );
-
-
-    // Название всегда остаётся видимым.
-
-    nameBox.style.display = "block";
-
-
-    // В режиме картинки без описания
-    // блок описания скрываем.
-
-    if (simpleImageMode) {
-
-        description.style.display = "none";
-
-    } else {
-
-        description.style.display = "";
-    }
-}
-
-
-// ========================================
-// ПОКАЗ КАРТОЧКИ
-// ========================================
-
-// ========================================
-// ПОКАЗ КАРТОЧКИ
-// ========================================
-
-function showCard() {
-
-    const item =
-        currentCatalog.items[currentIndex];
-
-
-    // ====================================
-    // РЕЖИМ КАРТОЧКИ
-    // ====================================
-
-    updateCardMode(item);
-
-
-    // ====================================
-    // НАЗВАНИЕ КАТАЛОГА
-    // ====================================
-
-    catalogTitle.textContent =
-        currentCatalog.title;
-
-
-    // ====================================
-    // НАЗВАНИЕ ОБЪЕКТА
-    // ====================================
-
-    nameBox.textContent =
-        item.name;
-
-
-    // ====================================
-    // КАРТИНКА
-    // ====================================
-
-    loadImage(photo, item.img);
-
-
-    // ====================================
-    // ОПИСАНИЕ
-    // ====================================
-
-    if (hasDescription(item)) {
-
-        description.innerHTML =
-            item.desc;
-
-    } else {
-
-        description.innerHTML = "";
-    }
-
-
-    // ====================================
-    // СЧЁТЧИК
-    // ====================================
-
-    counter.textContent =
-        `${currentIndex + 1} / ${currentCatalog.items.length}`;
-}
-
-
-// ========================================
-// СЛЕДУЮЩАЯ КАРТОЧКА
-// ========================================
-
-function nextCard() {
-
-    currentIndex++;
-
-    if (
-        currentIndex >=
-        currentCatalog.items.length
-    ) {
-
+    function openCatalog(key) {
+        var catalogs = window.CATALOGS;
+        if (!catalogs || !catalogs[key] || !isValidCatalog(catalogs[key])) {
+            return;
+        }
+
+        stopSpeech();
+        currentCatalogKey = key;
+        currentCatalog = catalogs[key];
         currentIndex = 0;
+
+        if (DOM.menuScreen) DOM.menuScreen.style.display = 'none';
+        if (DOM.viewerScreen) DOM.viewerScreen.style.display = 'block';
+
+        showCard();
     }
 
-    showCard();
-}
+    function backToMenu() {
+        stopSpeech();
+        currentCatalogKey = null;
+        currentCatalog = null;
+        currentIndex = 0;
 
+        clearCardLink();
 
-// ========================================
-// ПРЕДЫДУЩАЯ КАРТОЧКА
-// ========================================
-
-function prevCard() {
-
-    currentIndex--;
-
-    if (currentIndex < 0) {
-
-        currentIndex =
-            currentCatalog.items.length - 1;
+        if (DOM.viewerScreen) DOM.viewerScreen.style.display = 'none';
+        if (DOM.menuScreen) DOM.menuScreen.style.display = 'block';
     }
 
-    showCard();
-}
+    // ============================================================
+    // 5. IMAGE RESOLUTION & AUTO-REPAIR
+    // ============================================================
 
+    function getImageCandidates(originalPath) {
+        if (!originalPath || typeof originalPath !== 'string') return [];
 
-// ========================================
-// ОЗВУЧКА
-// ========================================
+        var path = originalPath.trim();
+        var lastSlashIdx = path.lastIndexOf('/');
+        var dir = lastSlashIdx !== -1 ? path.substring(0, lastSlashIdx + 1) : '';
+        var fileName = lastSlashIdx !== -1 ? path.substring(lastSlashIdx + 1) : path;
 
-// ========================================
-// ОЗВУЧКА
-// ========================================
+        var dotIdx = fileName.lastIndexOf('.');
+        var baseName = fileName;
+        var originalExt = '';
 
-function speakCurrent() {
+        if (dotIdx > 0) {
+            baseName = fileName.substring(0, dotIdx);
+            originalExt = fileName.substring(dotIdx + 1).toLowerCase();
+        }
 
-    speechSynthesis.cancel();
+        var candidates = [];
+        var basePath = dir + baseName;
 
-    const item =
-        currentCatalog.items[currentIndex];
+        // If original path had an extension, try that specific full path first
+        if (originalExt) {
+            candidates.push(path);
+        }
 
+        // Add base path + all supported extensions
+        SUPPORTED_EXTENSIONS.forEach(function (ext) {
+            if (ext !== originalExt) {
+                candidates.push(basePath + '.' + ext);
+            }
+        });
 
-    // ====================================
-    // Если описания нет —
-    // озвучиваем только название.
-    // ====================================
+        // Add base path without extension as candidate if nothing else matched
+        if (!originalExt && candidates.length === 0) {
+            candidates.push(path);
+        }
 
-    if (!hasDescription(item)) {
-
-        const utter =
-            new SpeechSynthesisUtterance(item.name);
-
-        utter.lang = "ru-RU";
-
-        utter.rate = 0.95;
-
-        speechSynthesis.speak(utter);
-
-        return;
+        return candidates;
     }
 
+    function resolveAndSetImage(originalPath, token) {
+        if (!DOM.photo) return;
 
-    // ====================================
-    // Есть описание —
-    // озвучиваем название + описание.
-    // ====================================
+        var candidates = getImageCandidates(originalPath);
+        if (candidates.length === 0) {
+            DOM.photo.style.display = 'none';
+            return;
+        }
 
-    const cleanDescription =
-        getDescriptionText(item.desc);
+        // Hide or clear image temporarily while resolving to avoid showing stale picture
+        DOM.photo.style.display = 'none';
 
+        var candidateIndex = 0;
 
-    const text =
-        item.name +
-        ". " +
-        cleanDescription;
+        function tryNextCandidate() {
+            // Race protection: ignore if card changed during async load
+            if (token !== imageLoadToken) return;
 
+            if (candidateIndex >= candidates.length) {
+                // All candidates failed: restore original path so browser displays broken image
+                DOM.photo.src = originalPath;
+                DOM.photo.style.display = 'block';
+                return;
+            }
 
-    const utter =
-        new SpeechSynthesisUtterance(text);
+            var candidateUrl = candidates[candidateIndex++];
+            var testImg = new Image();
 
+            testImg.onload = function () {
+                if (token !== imageLoadToken) return;
+                DOM.photo.src = candidateUrl;
+                DOM.photo.style.display = 'block';
+            };
 
-    utter.lang = "ru-RU";
+            testImg.onerror = function () {
+                if (token !== imageLoadToken) return;
+                tryNextCandidate();
+            };
 
-    utter.rate = 0.95;
+            testImg.src = candidateUrl;
+        }
 
-
-    speechSynthesis.speak(utter);
-}
-
-
-// ========================================
-// КНОПКИ
-// ========================================
-
-document
-    .getElementById("backBtn")
-    .onclick = backToMenu;
-
-
-document
-    .getElementById("nextBtn")
-    .onclick = nextCard;
-
-
-document
-    .getElementById("prevBtn")
-    .onclick = prevCard;
-
-
-document
-    .getElementById("speakBtn")
-    .onclick = speakCurrent;
-
-
-// ========================================
-// КЛАВИАТУРА
-// ========================================
-
-document.addEventListener("keydown", e => {
-
-    if (viewerScreen.style.display === "none")
-        return;
-
-
-    // Вправо
-
-    if (e.key === "ArrowRight")
-        nextCard();
-
-
-    // Влево
-
-    if (e.key === "ArrowLeft")
-        prevCard();
-
-
-    // Escape
-
-    if (e.key === "Escape")
-        backToMenu;
-
-
-    // Пробел — озвучка
-
-    if (e.key === " ") {
-
-        e.preventDefault();
-
-        speakCurrent();
+        tryNextCandidate();
     }
-});
 
+    // ============================================================
+    // 6. LINK MANAGEMENT ("a" field)
+    // ============================================================
 
-// ========================================
-// СТАРТ
-// ========================================
+    function clearCardLink() {
+        var existingLink = document.getElementById('generatedCardLink');
+        if (existingLink && existingLink.parentNode) {
+            existingLink.parentNode.removeChild(existingLink);
+        }
+    }
 
-buildMenu();
+    function renderCardLink(url) {
+        clearCardLink();
+        if (!isNonEmptyString(url)) return;
 
+        var linkBtn = document.createElement('a');
+        linkBtn.id = 'generatedCardLink';
+        linkBtn.href = url.trim();
+        linkBtn.target = '_blank';
+        linkBtn.rel = 'noopener noreferrer';
+        linkBtn.className = 'action-btn link-btn';
+        linkBtn.textContent = 'Открыть ссылку 🔗';
+        linkBtn.style.display = 'inline-block';
+        linkBtn.style.marginTop = '10px';
+
+        // Append link inside description container or after controls
+        if (DOM.description && DOM.description.parentNode) {
+            DOM.description.parentNode.insertBefore(linkBtn, DOM.description.nextSibling);
+        } else if (DOM.viewerScreen) {
+            DOM.viewerScreen.appendChild(linkBtn);
+        }
+    }
+
+    // ============================================================
+    // 7. CARD RENDERING ENGINE
+    // ============================================================
+
+    function showCard() {
+        if (!currentCatalog || !Array.isArray(currentCatalog.items)) return;
+
+        stopSpeech();
+        imageLoadToken++; // Invalidate previous async image callbacks
+
+        var total = currentCatalog.items.length;
+
+        // Empty catalog handling
+        if (total === 0) {
+            if (DOM.catalogTitle) DOM.catalogTitle.textContent = getCatalogTitle(currentCatalogKey, currentCatalog);
+            if (DOM.nameBox) {
+                DOM.nameBox.textContent = 'Каталог пуст';
+                DOM.nameBox.style.display = 'block';
+            }
+            if (DOM.photo) DOM.photo.style.display = 'none';
+            if (DOM.description) DOM.description.style.display = 'none';
+            if (DOM.counter) DOM.counter.textContent = '0 / 0';
+            clearCardLink();
+            updateSpeechState(null);
+            return;
+        }
+
+        // Clamp or normalize index safely
+        if (currentIndex < 0) currentIndex = total - 1;
+        if (currentIndex >= total) currentIndex = 0;
+
+        var item = currentCatalog.items[currentIndex];
+        if (!item || typeof item !== 'object') {
+            item = {};
+        }
+
+        var itemHasName = hasName(item);
+        var itemHasImg = hasImage(item);
+        var itemHasDesc = hasDescription(item);
+        var itemHasLink = hasLink(item);
+
+        // Update Title
+        if (DOM.catalogTitle) {
+            DOM.catalogTitle.textContent = getCatalogTitle(currentCatalogKey, currentCatalog);
+        }
+
+        // Update Counter
+        if (DOM.counter) {
+            DOM.counter.textContent = (currentIndex + 1) + ' / ' + total;
+        }
+
+        // Render Name
+        if (DOM.nameBox) {
+            if (itemHasName) {
+                DOM.nameBox.textContent = item.name.trim();
+                DOM.nameBox.style.display = '';
+            } else {
+                DOM.nameBox.textContent = '';
+                DOM.nameBox.style.display = 'none';
+            }
+        }
+
+        // Render Image
+        if (DOM.photo) {
+            if (itemHasImg) {
+                resolveAndSetImage(item.img, imageLoadToken);
+            } else {
+                DOM.photo.removeAttribute('src');
+                DOM.photo.style.display = 'none';
+            }
+        }
+
+        // Render Description
+        if (DOM.description) {
+            if (itemHasDesc) {
+                DOM.description.innerHTML = item.desc;
+                DOM.description.style.display = '';
+            } else {
+                DOM.description.innerHTML = '';
+                DOM.description.style.display = 'none';
+            }
+        }
+
+        // Render Link "a"
+        if (itemHasLink) {
+            renderCardLink(item.a);
+        } else {
+            clearCardLink();
+        }
+
+        // Layout Mode Adjustments
+        if (DOM.viewerScreen) {
+            if (itemHasImg && !itemHasDesc) {
+                DOM.viewerScreen.classList.add('simpleImageMode');
+            } else {
+                DOM.viewerScreen.classList.remove('simpleImageMode');
+            }
+        }
+
+        // Update Speech state
+        updateSpeechState(item);
+    }
+
+    // ============================================================
+    // 8. NAVIGATION
+    // ============================================================
+
+    function nextCard() {
+        if (!currentCatalog || !Array.isArray(currentCatalog.items) || currentCatalog.items.length === 0) return;
+        currentIndex = (currentIndex + 1) % currentCatalog.items.length;
+        showCard();
+    }
+
+    function prevCard() {
+        if (!currentCatalog || !Array.isArray(currentCatalog.items) || currentCatalog.items.length === 0) return;
+        currentIndex = (currentIndex - 1 + currentCatalog.items.length) % currentCatalog.items.length;
+        showCard();
+    }
+
+    // ============================================================
+    // 9. SPEECH SYNTHESIS
+    // ============================================================
+
+    function canSpeakCard(item) {
+        return speechSupported && (hasName(item) || hasDescription(item));
+    }
+
+    function updateSpeechState(item) {
+        if (!DOM.speakBtn) return;
+        if (canSpeakCard(item)) {
+            DOM.speakBtn.disabled = false;
+        } else {
+            DOM.speakBtn.disabled = true;
+        }
+    }
+
+    function stopSpeech() {
+        if (speechSupported) {
+            window.speechSynthesis.cancel();
+        }
+    }
+
+    function speakCurrent() {
+        if (!speechSupported || !currentCatalog || !Array.isArray(currentCatalog.items)) return;
+
+        // Если прямо сейчас идет озвучивание — останавливаем его (поведение Toggle / Пауза-Стоп)
+        if (window.speechSynthesis.speaking) {
+            stopSpeech();
+            return;
+        }
+
+        var item = currentCatalog.items[currentIndex];
+        if (!canSpeakCard(item)) return;
+
+        stopSpeech(); // Сбрасываем возможные зависшие очереди
+
+        var textParts = [];
+        if (hasName(item)) {
+            textParts.push(item.name.trim());
+        }
+        if (hasDescription(item)) {
+            textParts.push(stripHTML(item.desc));
+        }
+
+        var fullText = textParts.join('. ');
+        if (!fullText) return;
+
+        var utterance = new SpeechSynthesisUtterance(fullText);
+        utterance.lang = 'ru-RU';
+        utterance.rate = 0.95;
+
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // ============================================================
+    // 10. KEYBOARD & EVENT LISTENERS
+    // ============================================================
+
+    function setupEventListeners() {
+        if (DOM.prevBtn) DOM.prevBtn.addEventListener('click', prevCard);
+        if (DOM.nextBtn) DOM.nextBtn.addEventListener('click', nextCard);
+        if (DOM.backBtn) DOM.backBtn.addEventListener('click', backToMenu);
+        if (DOM.speakBtn) DOM.speakBtn.addEventListener('click', speakCurrent);
+
+        document.addEventListener('keydown', function (e) {
+            // Handle shortcuts only when viewer screen is active
+            if (!DOM.viewerScreen || DOM.viewerScreen.style.display === 'none') {
+                return;
+            }
+
+            switch (e.key) {
+                case 'ArrowRight':
+                    nextCard();
+                    break;
+                case 'ArrowLeft':
+                    prevCard();
+                    break;
+                case ' ':
+                    e.preventDefault(); // Prevent page scrolling
+                    if (DOM.speakBtn && !DOM.speakBtn.disabled) {
+                        speakCurrent();
+                    }
+                    break;
+                case 'Escape':
+                    backToMenu();
+                    break;
+            }
+        });
+    }
+
+    // ============================================================
+    // 11. INITIALIZATION
+    // ============================================================
+
+    function initApp() {
+        cacheDOMElements();
+        setupEventListeners();
+        buildMenu();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+        initApp();
+    }
+
+})();

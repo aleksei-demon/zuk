@@ -10,7 +10,7 @@ window.CATALOGS.risunki = {
 
         {
             name: "рисунок",
-            img: "IMG_risunki/1.jpg",
+            img: "IMG_risunki/1.png",
         },
         {
             name: "рисунок",
