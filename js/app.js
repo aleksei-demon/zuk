@@ -388,7 +388,58 @@
         }
 
         updateSpeechState(item);
+        // Запускаем предзагрузку соседних и остальных картинок
+        preloadNearbyImages(20);
     }
+
+
+    // ============================================================
+    // 8. PRELOADER ENGINE (SMART CACHING)
+    // ============================================================
+
+    // Хранилище загруженных объектов Image в памяти, чтобы браузер не выгружал их
+    var imageCache = {};
+
+    function preloadSingleImage(src) {
+        if (!src || typeof src !== 'string' || imageCache[src]) return;
+
+        var img = new Image();
+        img.src = src;
+        // Сохраняем ссылку в памяти
+        imageCache[src] = img;
+    }
+
+    function preloadNearbyImages(range) {
+        if (!currentCatalog || !Array.isArray(currentCatalog.items)) return;
+
+        var items = currentCatalog.items;
+        var total = items.length;
+        var radius = range || 10; // По умолчанию +-10 карточек
+
+        // 1. Приоритетный предзагруз ближайших N элементов в обе стороны
+        for (var i = 1; i <= radius; i++) {
+            var nextIdx = (currentIndex + i) % total;
+            var prevIdx = (currentIndex - i + total) % total;
+
+            if (items[nextIdx] && items[nextIdx].img) {
+                preloadSingleImage(items[nextIdx].img);
+            }
+            if (items[prevIdx] && items[prevIdx].img) {
+                preloadSingleImage(items[prevIdx].img);
+            }
+        }
+
+        // 2. Фоновая докачка вообще ВСЕХ остальных картинок каталога
+        setTimeout(function () {
+            items.forEach(function (item) {
+                if (item && item.img) {
+                    preloadSingleImage(item.img);
+                }
+            });
+        }, 300);
+    }
+
+
 
     // ============================================================
     // 8. NAVIGATION
