@@ -153,6 +153,10 @@
     // 5. IMAGE RESOLUTION & AUTO-REPAIR
     // ============================================================
 
+    // ============================================================
+    // 5. IMAGE RESOLUTION & AUTO-REPAIR (OPTIMIZED)
+    // ============================================================
+
     function getImageCandidates(originalPath) {
         if (!originalPath || typeof originalPath !== 'string') return [];
 
@@ -170,51 +174,35 @@
             originalExt = fileName.substring(dotIdx + 1).toLowerCase();
         }
 
-        var candidates = [];
         var basePath = dir + baseName;
 
-        // If original path had an extension, try that specific full path first
-        if (originalExt) {
-            candidates.push(path);
+        // Быстрый фоллбэк: проверяем только 1 самое вероятное соседнее расширение
+        if (originalExt === 'jpg' || originalExt === 'jpeg') {
+            return [basePath + '.png'];
+        } else if (originalExt === 'png') {
+            return [basePath + '.jpg'];
         }
 
-        // Add base path + all supported extensions
-        SUPPORTED_EXTENSIONS.forEach(function (ext) {
-            if (ext !== originalExt) {
-                candidates.push(basePath + '.' + ext);
-            }
-        });
-
-        // Add base path without extension as candidate if nothing else matched
-        if (!originalExt && candidates.length === 0) {
-            candidates.push(path);
-        }
-
-        return candidates;
+        return [basePath + '.jpg'];
     }
 
-    function resolveAndSetImage(originalPath, token) {
+    // Фоновый поиск рабочего файла, если основной путь из ТЗ не загрузился
+    function fallbackResolveImage(originalPath, token) {
         if (!DOM.photo) return;
 
         var candidates = getImageCandidates(originalPath);
-        if (candidates.length === 0) {
-            DOM.photo.style.display = 'none';
-            return;
-        }
-
-        // Hide or clear image temporarily while resolving to avoid showing stale picture
-        DOM.photo.style.display = 'none';
-
         var candidateIndex = 0;
 
         function tryNextCandidate() {
-            // Race protection: ignore if card changed during async load
             if (token !== imageLoadToken) return;
 
             if (candidateIndex >= candidates.length) {
-                // All candidates failed: restore original path so browser displays broken image
-                DOM.photo.src = originalPath;
-                DOM.photo.style.display = 'block';
+                // Файл окончательно отсутствует: прячем <img> и пишем понятный аларм в консоль
+                DOM.photo.onerror = null;
+                DOM.photo.removeAttribute('src');
+                DOM.photo.style.display = 'none';
+
+                console.warn('[MISSING IMAGE]', originalPath);
                 return;
             }
 
@@ -223,6 +211,7 @@
 
             testImg.onload = function () {
                 if (token !== imageLoadToken) return;
+                DOM.photo.onerror = null;
                 DOM.photo.src = candidateUrl;
                 DOM.photo.style.display = 'block';
             };
@@ -236,6 +225,24 @@
         }
 
         tryNextCandidate();
+    }
+
+    function resolveAndSetImage(originalPath, token) {
+        if (!DOM.photo) return;
+
+        // Снимаем старый onerror, чтобы не сработали предыдущие каскады
+        DOM.photo.onerror = null;
+
+        // Оптимистично ставим путь прямо из данных
+        DOM.photo.src = originalPath;
+        DOM.photo.style.display = 'block';
+
+        // Если файл не существует / расширение ошибочно — сработает onerror и запустит автопочинку
+        DOM.photo.onerror = function () {
+            if (token !== imageLoadToken) return;
+            DOM.photo.onerror = null; // Предотвращаем зацикливание
+            fallbackResolveImage(originalPath, token);
+        };
     }
 
     // ============================================================
@@ -270,6 +277,10 @@
             DOM.viewerScreen.appendChild(linkBtn);
         }
     }
+
+    // ============================================================
+    // 7. CARD RENDERING ENGINE
+    // ============================================================
 
     // ============================================================
     // 7. CARD RENDERING ENGINE
@@ -322,7 +333,7 @@
             DOM.counter.textContent = (currentIndex + 1) + ' / ' + total;
         }
 
-        // Render Name
+        // Render Name (Title of the item)
         if (DOM.nameBox) {
             if (itemHasName) {
                 DOM.nameBox.textContent = item.name.trim();
@@ -338,6 +349,7 @@
             if (itemHasImg) {
                 resolveAndSetImage(item.img, imageLoadToken);
             } else {
+                DOM.photo.onerror = null;
                 DOM.photo.removeAttribute('src');
                 DOM.photo.style.display = 'none';
             }
