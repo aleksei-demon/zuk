@@ -286,11 +286,15 @@
     // 7. CARD RENDERING ENGINE
     // ============================================================
 
+    // ============================================================
+    // 7. CARD RENDERING ENGINE (LAYOUT STABILITY FIX)
+    // ============================================================
+
     function showCard() {
         if (!currentCatalog || !Array.isArray(currentCatalog.items)) return;
 
         stopSpeech();
-        imageLoadToken++; // Invalidate previous async image callbacks
+        imageLoadToken++;
 
         var total = currentCatalog.items.length;
 
@@ -309,7 +313,7 @@
             return;
         }
 
-        // Clamp or normalize index safely
+        // Normalize index
         if (currentIndex < 0) currentIndex = total - 1;
         if (currentIndex >= total) currentIndex = 0;
 
@@ -323,17 +327,15 @@
         var itemHasDesc = hasDescription(item);
         var itemHasLink = hasLink(item);
 
-        // Update Title
+        // Update Title & Counter
         if (DOM.catalogTitle) {
             DOM.catalogTitle.textContent = getCatalogTitle(currentCatalogKey, currentCatalog);
         }
-
-        // Update Counter
         if (DOM.counter) {
             DOM.counter.textContent = (currentIndex + 1) + ' / ' + total;
         }
 
-        // Render Name (Title of the item)
+        // 1. Render Name
         if (DOM.nameBox) {
             if (itemHasName) {
                 DOM.nameBox.textContent = item.name.trim();
@@ -344,18 +346,21 @@
             }
         }
 
-        // Render Image
+        // 2. Render Image (Жестко держим верстку, если в объекте заявлена картинка)
         if (DOM.photo) {
             if (itemHasImg) {
+                // НЕ ПРЯЧЕМ блок! Показываем сразу, забивая место под картинку
+                DOM.photo.style.display = 'block';
                 resolveAndSetImage(item.img, imageLoadToken);
             } else {
+                // Прячем ТОЛЬКО если картинка вообще не предусмотрена в объекте ТЗ
                 DOM.photo.onerror = null;
                 DOM.photo.removeAttribute('src');
                 DOM.photo.style.display = 'none';
             }
         }
 
-        // Render Description
+        // 3. Render Description
         if (DOM.description) {
             if (itemHasDesc) {
                 DOM.description.innerHTML = item.desc;
@@ -366,7 +371,7 @@
             }
         }
 
-        // Render Link "a"
+        // 4. Render Link
         if (itemHasLink) {
             renderCardLink(item.a);
         } else {
@@ -382,7 +387,6 @@
             }
         }
 
-        // Update Speech state
         updateSpeechState(item);
     }
 
