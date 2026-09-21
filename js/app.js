@@ -161,29 +161,49 @@
         if (!originalPath || typeof originalPath !== 'string') return [];
 
         var path = originalPath.trim();
+
         var lastSlashIdx = path.lastIndexOf('/');
-        var dir = lastSlashIdx !== -1 ? path.substring(0, lastSlashIdx + 1) : '';
-        var fileName = lastSlashIdx !== -1 ? path.substring(lastSlashIdx + 1) : path;
+        var dir = lastSlashIdx !== -1
+            ? path.substring(0, lastSlashIdx + 1)
+            : '';
+
+        var fileName = lastSlashIdx !== -1
+            ? path.substring(lastSlashIdx + 1)
+            : path;
 
         var dotIdx = fileName.lastIndexOf('.');
-        var baseName = fileName;
-        var originalExt = '';
+        var baseName = dotIdx > 0
+            ? fileName.substring(0, dotIdx)
+            : fileName;
 
-        if (dotIdx > 0) {
-            baseName = fileName.substring(0, dotIdx);
-            originalExt = fileName.substring(dotIdx + 1).toLowerCase();
-        }
+        /*
+         * Проверяем все варианты регистра расширения.
+         * Само имя файла при этом НЕ меняем.
+         */
+        var extensions = [
+            '.jpg',
+            '.JPG',
+            '.jpeg',
+            '.JPEG',
+            '.png',
+            '.PNG',
+            '.webp',
+            '.WEBP',
+            '.gif',
+            '.GIF',
+            '.avif',
+            '.AVIF',
+            '.svg',
+            '.SVG'
+        ];
 
-        var basePath = dir + baseName;
+        var candidates = [];
 
-        // Быстрый фоллбэк: проверяем только 1 самое вероятное соседнее расширение
-        if (originalExt === 'jpg' || originalExt === 'jpeg') {
-            return [basePath + '.png'];
-        } else if (originalExt === 'png') {
-            return [basePath + '.jpg'];
-        }
+        extensions.forEach(function (ext) {
+            candidates.push(dir + baseName + ext);
+        });
 
-        return [basePath + '.jpg'];
+        return candidates;
     }
 
     // Фоновый поиск рабочего файла, если основной путь из ТЗ не загрузился
