@@ -150,10 +150,6 @@
     }
 
     // ============================================================
-    // 5. IMAGE RESOLUTION & AUTO-REPAIR
-    // ============================================================
-
-    // ============================================================
     // 5. IMAGE RESOLUTION & AUTO-REPAIR (OPTIMIZED)
     // ============================================================
 
@@ -161,49 +157,29 @@
         if (!originalPath || typeof originalPath !== 'string') return [];
 
         var path = originalPath.trim();
-
         var lastSlashIdx = path.lastIndexOf('/');
-        var dir = lastSlashIdx !== -1
-            ? path.substring(0, lastSlashIdx + 1)
-            : '';
-
-        var fileName = lastSlashIdx !== -1
-            ? path.substring(lastSlashIdx + 1)
-            : path;
+        var dir = lastSlashIdx !== -1 ? path.substring(0, lastSlashIdx + 1) : '';
+        var fileName = lastSlashIdx !== -1 ? path.substring(lastSlashIdx + 1) : path;
 
         var dotIdx = fileName.lastIndexOf('.');
-        var baseName = dotIdx > 0
-            ? fileName.substring(0, dotIdx)
-            : fileName;
+        var baseName = fileName;
+        var originalExt = '';
 
-        /*
-         * Проверяем все варианты регистра расширения.
-         * Само имя файла при этом НЕ меняем.
-         */
-        var extensions = [
-            '.jpg',
-            '.JPG',
-            '.jpeg',
-            '.JPEG',
-            '.png',
-            '.PNG',
-            '.webp',
-            '.WEBP',
-            '.gif',
-            '.GIF',
-            '.avif',
-            '.AVIF',
-            '.svg',
-            '.SVG'
-        ];
+        if (dotIdx > 0) {
+            baseName = fileName.substring(0, dotIdx);
+            originalExt = fileName.substring(dotIdx + 1).toLowerCase();
+        }
 
-        var candidates = [];
+        var basePath = dir + baseName;
 
-        extensions.forEach(function (ext) {
-            candidates.push(dir + baseName + ext);
-        });
+        // Быстрый фоллбэк: проверяем только 1 самое вероятное соседнее расширение
+        if (originalExt === 'jpg' || originalExt === 'jpeg') {
+            return [basePath + '.png'];
+        } else if (originalExt === 'png') {
+            return [basePath + '.jpg'];
+        }
 
-        return candidates;
+        return [basePath + '.jpg'];
     }
 
     // Фоновый поиск рабочего файла, если основной путь из ТЗ не загрузился
@@ -298,13 +274,6 @@
         }
     }
 
-    // ============================================================
-    // 7. CARD RENDERING ENGINE
-    // ============================================================
-
-    // ============================================================
-    // 7. CARD RENDERING ENGINE
-    // ============================================================
 
     // ============================================================
     // 7. CARD RENDERING ENGINE (LAYOUT STABILITY FIX)
