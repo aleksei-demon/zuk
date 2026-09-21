@@ -157,9 +157,15 @@
         if (!originalPath || typeof originalPath !== 'string') return [];
 
         var path = originalPath.trim();
+
         var lastSlashIdx = path.lastIndexOf('/');
-        var dir = lastSlashIdx !== -1 ? path.substring(0, lastSlashIdx + 1) : '';
-        var fileName = lastSlashIdx !== -1 ? path.substring(lastSlashIdx + 1) : path;
+        var dir = lastSlashIdx !== -1
+            ? path.substring(0, lastSlashIdx + 1)
+            : '';
+
+        var fileName = lastSlashIdx !== -1
+            ? path.substring(lastSlashIdx + 1)
+            : path;
 
         var dotIdx = fileName.lastIndexOf('.');
         var baseName = fileName;
@@ -167,19 +173,67 @@
 
         if (dotIdx > 0) {
             baseName = fileName.substring(0, dotIdx);
-            originalExt = fileName.substring(dotIdx + 1).toLowerCase();
+            originalExt = fileName.substring(dotIdx + 1);
         }
 
         var basePath = dir + baseName;
+        var candidates = [];
 
-        // Быстрый фоллбэк: проверяем только 1 самое вероятное соседнее расширение
-        if (originalExt === 'jpg' || originalExt === 'jpeg') {
-            return [basePath + '.png'];
-        } else if (originalExt === 'png') {
-            return [basePath + '.jpg'];
+        // ============================================================
+        // 1. ОРИГИНАЛЬНЫЙ ПУТЬ — ВСЕГДА ПЕРВЫМ
+        // ============================================================
+
+        candidates.push(path);
+
+        // ============================================================
+        // 2. ТО ЖЕ РАСШИРЕНИЕ, НО В ДРУГОМ РЕГИСТРЕ
+        // ============================================================
+
+        if (originalExt) {
+            var lowerExt = originalExt.toLowerCase();
+            var upperExt = originalExt.toUpperCase();
+
+            if (originalExt !== lowerExt) {
+                candidates.push(basePath + '.' + lowerExt);
+            }
+
+            if (originalExt !== upperExt) {
+                candidates.push(basePath + '.' + upperExt);
+            }
         }
 
-        return [basePath + '.jpg'];
+        // ============================================================
+        // 3. СТАРЫЙ БЫСТРЫЙ FALLBACK JPG <-> PNG
+        // ============================================================
+
+        var lowerOriginalExt = originalExt.toLowerCase();
+
+        if (lowerOriginalExt === 'jpg' || lowerOriginalExt === 'jpeg') {
+            candidates.push(basePath + '.png');
+            candidates.push(basePath + '.PNG');
+        } else if (lowerOriginalExt === 'png') {
+            candidates.push(basePath + '.jpg');
+            candidates.push(basePath + '.JPG');
+        } else {
+            candidates.push(basePath + '.jpg');
+            candidates.push(basePath + '.JPG');
+        }
+
+        // ============================================================
+        // Убираем возможные дубли
+        // ============================================================
+
+        var unique = [];
+        var seen = {};
+
+        candidates.forEach(function (candidate) {
+            if (!seen[candidate]) {
+                seen[candidate] = true;
+                unique.push(candidate);
+            }
+        });
+
+        return unique;
     }
 
     // Фоновый поиск рабочего файла, если основной путь из ТЗ не загрузился
@@ -229,14 +283,19 @@
         // Снимаем старый onerror, чтобы не сработали предыдущие каскады
         DOM.photo.onerror = null;
 
+        // Если preloader уже нашёл настоящий файл —
+        // используем его напрямую, без лишнего 404.
+        var resolvedPath = resolvedImageCache[originalPath] || originalPath;
+
         // Оптимистично ставим путь прямо из данных
-        DOM.photo.src = originalPath;
+        DOM.photo.src = resolvedPath;
         DOM.photo.style.display = 'block';
 
-        // Если файл не существует / расширение ошибочно — сработает onerror и запустит автопочинку
+        // Если файл не существует / расширение ошибочно — запускаем fallback
         DOM.photo.onerror = function () {
             if (token !== imageLoadToken) return;
-            DOM.photo.onerror = null; // Предотвращаем зацикливание
+
+            DOM.photo.onerror = null;
             fallbackResolveImage(originalPath, token);
         };
     }
@@ -389,13 +448,75 @@
     // Хранилище загруженных объектов Image в памяти, чтобы браузер не выгружал их
     var imageCache = {};
 
+    // Запоминает реальный существующий путь.
+    // Например:
+    // "IMG_fish/salmon.jpg" -> "IMG_fish/salmon.PNG"
+    var resolvedImageCache = {};
+
+
     function preloadSingleImage(src) {
         if (!src || typeof src !== 'string' || imageCache[src]) return;
 
         var img = new Image();
+
+        img.onload = function () {
+            // Запоминаем реально существующий файл
+            resolvedImageCache[src] = src;
+        };
+
         img.src = src;
+
         // Сохраняем ссылку в памяти
         imageCache[src] = img;
+    }
+
+    function preloadImageWithFallback(src) {
+        if (!src || typeof src !== 'string') return;
+
+        // Уже известно, где реально лежит файл
+        if (resolvedImageCache[src]) {
+            preloadSingleImage(resolvedImageCache[src]);
+            return;
+        }
+
+        var candidates = getImageCandidates(src);
+        var index = 0;
+
+        function tryNext() {
+            if (index >= candidates.length) return;
+
+            var candidate = candidates[index++];
+
+            // Если этот URL уже проверяли/загрузили — идём дальше
+            if (imageCache[candidate]) {
+                if (resolvedImageCache[candidate]) {
+                    resolvedImageCache[src] = candidate;
+                }
+                return;
+            }
+
+            var img = new Image();
+
+            img.onload = function () {
+                // Нашли настоящий файл
+                resolvedImageCache[src] = candidate;
+
+                // Сохраняем его в общем кэше
+                imageCache[candidate] = img;
+            };
+
+            img.onerror = function () {
+                tryNext();
+            };
+
+            // Сохраняем ДО запуска загрузки,
+            // чтобы повторный preload не создал второй запрос
+            imageCache[candidate] = img;
+
+            img.src = candidate;
+        }
+
+        tryNext();
     }
 
     function preloadNearbyImages(range) {
@@ -411,10 +532,10 @@
             var prevIdx = (currentIndex - i + total) % total;
 
             if (items[nextIdx] && items[nextIdx].img) {
-                preloadSingleImage(items[nextIdx].img);
+                preloadImageWithFallback(items[nextIdx].img);
             }
             if (items[prevIdx] && items[prevIdx].img) {
-                preloadSingleImage(items[prevIdx].img);
+                preloadImageWithFallback(items[prevIdx].img);
             }
         }
 
@@ -422,7 +543,7 @@
         setTimeout(function () {
             items.forEach(function (item) {
                 if (item && item.img) {
-                    preloadSingleImage(item.img);
+                    preloadImageWithFallback(item.img);
                 }
             });
         }, 300);
