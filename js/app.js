@@ -540,13 +540,13 @@
         }
 
         // 2. Фоновая докачка вообще ВСЕХ остальных картинок каталога
-        setTimeout(function () {
-            items.forEach(function (item) {
-                if (item && item.img) {
-                    preloadImageWithFallback(item.img);
-                }
-            });
-        }, 300);
+        // setTimeout(function () {
+        //     items.forEach(function (item) {
+        //         if (item && item.img) {
+        //             preloadImageWithFallback(item.img);
+        //         }
+        //     });
+        // }, 300);
     }
 
 
