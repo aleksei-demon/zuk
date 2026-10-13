@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Дедупликатор каталогов JS</title>
+    <link rel="icon" href="data:image/svg+xml,
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+<rect width='100' height='100' rx='18' fill='%23151515'/>
+<text x='50' y='72' text-anchor='middle'
+      font-family='Georgia,serif'
+      font-size='72'
+      font-weight='bold'
+      fill='%23FFD700'>D</text>
+</svg>">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background: #1e1e24;
+            color: #e0e0e0;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #fff;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 75vh;
+            font-family: monospace;
+            font-size: 13px;
+            padding: 12px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: #111116;
+            color: #76e0a3;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        .controls {
+            margin: 15px 0;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #238636;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2ea043;
+        }
+
+        button.copy-btn {
+            background-color: #0969da;
+        }
+
+        button.copy-btn:hover {
+            background-color: #1f6feb;
+        }
+
+        button.success {
+            background-color: #238636 !important;
+        }
+
+        .stats {
+            font-weight: bold;
+            color: #a0a0a0;
+        }
+
+        .error {
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Очистка JS-каталогов от дубликатов</h1>
+
+    <div class="container">
+        <div>
+            <label><b>Исходный JS-код:</b></label>
+            <textarea id="inputJs" placeholder="Вставьте сюда весь JS-файл целиком..."></textarea>
+        </div>
+        <div>
+            <label><b>Очищенный JS-код:</b></label>
+            <textarea id="outputJs" readonly
+                placeholder="Здесь появится готовый код для вставки в редактор..."></textarea>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="processCatalog()">Очистить дубликаты</button>
+        <button id="copyBtn" class="copy-btn" onclick="copyResult()" style="display:none;">Скопировать код</button>
+        <span class="stats" id="stats"></span>
+    </div>
+    <div class="error" id="errorMsg"></div>
+
+    <script>
+        // Главная функция очистки массива объектов
+        function deduplicateItems(items) {
+            const seenNames = new Set();
+            const seenImgs = new Set();
+            const cleanArray = [];
+
+            for (const item of items) {
+                if (!item || typeof item !== 'object') continue;
+
+                // Если name или img пустые/отсутствуют — нормализуем
+                const nameVal = item.name ? String(item.name).trim() : null;
+                const imgVal = item.img ? String(item.img).trim() : null;
+
+                // Жесткое условие: совпал ИЛИ name, ИЛИ img — объект признается дубликатом
+                const isDuplicateName = nameVal && seenNames.has(nameVal);
+                const isDuplicateImg = imgVal && seenImgs.has(imgVal);
+
+                if (isDuplicateName || isDuplicateImg) {
+                    continue; // Вырезаем накорню
+                }
+
+                // Фиксируем ключи уникального объекта
+                if (nameVal) seenNames.add(nameVal);
+                if (imgVal) seenImgs.add(imgVal);
+
+                cleanArray.push(item);
+            }
+
+            return cleanArray;
+        }
+
+        // Преобразование массива объектов обратно в чистый JS-синтаксис с висячими запятыми и backticks
+        function formatJsItems(items) {
+            const formattedObjects = items.map((item, index) => {
+                let lines = [`        { //${index + 1}`];
+
+                if (item.name !== undefined) {
+                    lines.push(`            name: ${JSON.stringify(item.name)},`);
+                }
+                if (item.img !== undefined) {
+                    lines.push(`            img: ${JSON.stringify(item.img)},`);
+                }
+                if (item.desc !== undefined) {
+                    // Выводим desc через шаблонную строку с обратными кавычками
+                    lines.push(`            desc: \`${item.desc}\`,`);
+                }
+
+                // Для любых дополнительных ключей, если они появятся в будущем
+                for (const [key, value] of Object.entries(item)) {
+                    if (['name', 'img', 'desc'].includes(key)) continue;
+                    lines.push(`            \({key}:\){JSON.stringify(value)},`);
+                }
+
+                lines.push('        }');
+                return lines.join('\n');
+            });
+
+            // Формируем плотный массив без лишних пустых строк между объектами
+            return '[\n' + formattedObjects.join(',\n') + '\n    ]';
+        }
+
+        function processCatalog() {
+            const input = document.getElementById('inputJs').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            const stats = document.getElementById('stats');
+            const copyBtn = document.getElementById('copyBtn');
+
+            errorMsg.textContent = '';
+            stats.textContent = '';
+
+            if (!input) {
+                errorMsg.textContent = 'Вставьте JS-код в левое окно.';
+                return;
+            }
+
+            try {
+                // Создаем изолированное окружение для безопасного выполнения кода из поля
+                const sandbox = { window: { CATALOGS: {} } };
+                const executeCode = new Function('window', input);
+                executeCode(sandbox.window);
+
+                // Находим ключ каталога (например, 'pok')
+                const catalogKeys = Object.keys(sandbox.window.CATALOGS || {});
+                if (catalogKeys.length === 0) {
+                    throw new Error('Не найден объект window.CATALOGS в коде.');
+                }
+
+                const catKey = catalogKeys[0];
+                const catalog = sandbox.window.CATALOGS[catKey];
+
+                if (!catalog || !Array.isArray(catalog.items)) {
+                    throw new Error(`В window.CATALOGS.${catKey} не найден массив items.`);
+                }
+
+                const initialCount = catalog.items.length;
+                const cleanItems = deduplicateItems(catalog.items);
+                const finalCount = cleanItems.length;
+
+                // Генерируем итоговый JS-файл с сохранённой структурой
+                const resultJs = `window.CATALOGS = window.CATALOGS || {};\n\n` +
+                    `window.CATALOGS.${catKey} = {\n` +
+                    `    title: ${JSON.stringify(catalog.title || '')},\n\n` +
+                    `    items: ${formatJsItems(cleanItems)}\n` +
+                    `};`;
+
+                document.getElementById('outputJs').value = resultJs;
+
+                const removed = initialCount - finalCount;
+                stats.textContent = `Было элементов: ${initialCount} | Осталось: ${finalCount} | Удалено дублей: ${removed}`;
+                copyBtn.style.display = 'inline-block';
+
+            } catch (err) {
+                errorMsg.textContent = 'Ошибка выполнения кода: ' + err.message;
+            }
+        }
+
+        function copyResult() {
+            const outputText = document.getElementById('outputJs');
+            outputText.select();
+            navigator.clipboard.writeText(outputText.value).then(() => {
+                const copyBtn = document.getElementById('copyBtn');
+                copyBtn.textContent = 'Скопировано!';
+                copyBtn.classList.add('success');
+                setTimeout(() => {
+                    copyBtn.textContent = 'Скопировать код';
+                    copyBtn.classList.remove('success');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Извлекатель имён покемонов</title>
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background: #1e1e24;
+            color: #e0e0e0;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #fff;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            min-width: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 500px;
+            font-family: monospace;
+            font-size: 13px;
+            padding: 12px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: #111116;
+            color: #76e0a3;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        .controls {
+            margin: 15px 0;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #238636;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #2ea043;
+        }
+
+        button.copy-btn {
+            background-color: #0969da;
+        }
+
+        button.copy-btn:hover {
+            background-color: #1f6feb;
+        }
+
+        button.success {
+            background-color: #238636 !important;
+        }
+
+        .stats {
+            font-weight: bold;
+            color: #a0a0a0;
+        }
+
+        .error {
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            textarea {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Извлекатель английских имён покемонов</h1>
+
+    <div class="container">
+        <div class="panel">
+            <label for="inputJs">
+                <b>Исходный JS-код:</b>
+            </label>
+            <textarea
+                id="inputJs"
+                placeholder="Вставьте сюда весь JS-файл целиком..."
+            ></textarea>
+        </div>
+
+        <div class="panel">
+            <label for="outputNames">
+                <b>Список имён через запятую:</b>
+            </label>
+            <textarea
+                id="outputNames"
+                readonly
+                placeholder="Здесь появится список английских имён..."
+            ></textarea>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="processCatalog()">
+            Извлечь имена
+        </button>
+
+        <button
+            id="copyBtn"
+            class="copy-btn"
+            onclick="copyResult()"
+            style="display:none;"
+        >
+            Скопировать список
+        </button>
+
+        <span class="stats" id="stats"></span>
+    </div>
+
+    <div class="error" id="errorMsg"></div>
+
+    <script>
+        // Извлекает английское имя из пути к изображению.
+        function extractPokemonName(img) {
+            if (typeof img !== 'string' || !img.trim()) {
+                return null;
+            }
+
+            // Убираем пробелы по краям.
+            let filename = img.trim();
+
+            // Оставляем только имя файла.
+            filename = filename.split(/[\\/]/).pop();
+
+            // Убираем расширение последнего файла.
+            filename = filename.replace(/\.[^.]*$/, '');
+
+            return filename || null;
+        }
+
+        function processCatalog() {
+            const input = document.getElementById('inputJs').value.trim();
+            const output = document.getElementById('outputNames');
+            const errorMsg = document.getElementById('errorMsg');
+            const stats = document.getElementById('stats');
+            const copyBtn = document.getElementById('copyBtn');
+
+            errorMsg.textContent = '';
+            stats.textContent = '';
+            output.value = '';
+            copyBtn.style.display = 'none';
+
+            if (!input) {
+                errorMsg.textContent =
+                    'Вставьте JS-код в левое окно.';
+                return;
+            }
+
+            try {
+                // Изолированное окружение для выполнения каталога.
+                const sandbox = {
+                    CATALOGS: {},
+                    window: {
+                        CATALOGS: {}
+                    }
+                };
+
+                // Поддерживаем оба распространённых варианта:
+                // window.CATALOGS = ...
+                // CATALOGS = ...
+                const executeCode = new Function(
+                    'window',
+                    'CATALOGS',
+                    input
+                );
+
+                executeCode(sandbox.window, sandbox.CATALOGS);
+
+                // Определяем, где находится каталог.
+                const catalogs =
+                    sandbox.window.CATALOGS &&
+                    Object.keys(sandbox.window.CATALOGS).length
+                        ? sandbox.window.CATALOGS
+                        : sandbox.CATALOGS;
+
+                const catalogKeys = Object.keys(catalogs || {});
+
+                if (catalogKeys.length === 0) {
+                    throw new Error(
+                        'Не найден каталог window.CATALOGS.'
+                    );
+                }
+
+                // Обрабатываем первый найденный каталог.
+                const catKey = catalogKeys[0];
+                const catalog = catalogs[catKey];
+
+                if (!catalog || !Array.isArray(catalog.items)) {
+                    throw new Error(
+                        'В каталоге ' + catKey +
+                        ' не найден массив items.'
+                    );
+                }
+
+                const names = [];
+
+                for (const item of catalog.items) {
+                    if (!item || typeof item !== 'object') {
+                        continue;
+                    }
+
+                    const name = extractPokemonName(item.img);
+
+                    if (name !== null) {
+                        names.push(name);
+                    }
+                }
+
+                output.value = names.join(', ');
+
+                stats.textContent =
+                    'Объектов в каталоге: ' + catalog.items.length +
+                    ' | Извлечено имён: ' + names.length;
+
+                copyBtn.style.display = 'inline-block';
+
+            } catch (err) {
+                errorMsg.textContent =
+                    'Ошибка обработки каталога: ' + err.message;
+            }
+        }
+
+        function copyResult() {
+            const output = document.getElementById('outputNames');
+            const copyBtn = document.getElementById('copyBtn');
+
+            if (!output.value) {
+                return;
+            }
+
+            // Основной способ копирования.
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(output.value)
+                    .then(() => showCopied())
+                    .catch(() => fallbackCopy());
+            } else {
+                fallbackCopy();
+            }
+
+            function fallbackCopy() {
+                output.focus();
+                output.select();
+                output.setSelectionRange(0, output.value.length);
+
+                try {
+                    const successful =
+                        document.execCommand('copy');
+
+                    if (successful) {
+                        showCopied();
+                    } else {
+                        alert(
+                            'Не удалось скопировать автоматически. ' +
+                            'Выделите текст и скопируйте его вручную.'
+                        );
+                    }
+                } catch (err) {
+                    alert(
+                        'Не удалось скопировать автоматически. ' +
+                        'Выделите текст и скопируйте его вручную.'
+                    );
+                }
+            }
+
+            function showCopied() {
+                copyBtn.textContent = 'Скопировано!';
+                copyBtn.classList.add('success');
+
+                setTimeout(() => {
+                    copyBtn.textContent = 'Скопировать список';
+                    copyBtn.classList.remove('success');
+                }, 2000);
+            }
+        }
+    </script>
+
+</body>
+</html>

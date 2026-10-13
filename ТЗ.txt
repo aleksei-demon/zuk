@@ -1,0 +1,2344 @@
+ 
+============================================================
+TECHNICAL SPECIFICATION
+POST-APOCALYPTIC CARD ENGINE
+File: js/app.js
+Version: 1.0
+============================================================
+
+1. PURPOSE
+------------------------------------------------------------
+
+Implement a robust, self-contained client-side card viewer engine
+in ONE file:
+
+    js/app.js
+
+The application is a child-oriented information-card viewer.
+
+The engine must display catalog items consisting of any valid
+combination of:
+
+    name
+    img
+    desc
+    a
+
+The engine must be highly fault-tolerant.
+
+IMPORTANT:
+
+The existing catalog system is NOT to be redesigned.
+
+The engine is an extension layer over the existing system.
+
+Existing catalog files such as:
+
+    bugs.js
+    houses.js
+    fish.js
+    cars.js
+    fig.js
+    an.js
+    chis.js
+    fruit.js
+    opt.js
+    pok.js
+    href.js
+    roadSigns.js
+    risunki.js
+
+must continue to work without modification.
+
+The engine must work with the existing HTML structure.
+
+The engine must not require a backend, server, framework, build
+system, npm, modules, fetch(), or any external dependency.
+
+The application must work when opened directly as:
+
+    file:///.../index.html
+
+It must also work when hosted from GitHub Pages.
+
+
+============================================================
+2. CORE DESIGN PRINCIPLES
+------------------------------------------------------------
+
+The engine is the "cook".
+
+Catalog data is the available ingredients.
+
+The engine must inspect what is actually present in each item
+and select the appropriate presentation automatically.
+
+The engine must NOT require every item to contain the same fields.
+
+The engine must NOT mutate catalog data.
+
+NEVER modify:
+
+    window.CATALOGS
+    catalog objects
+    catalog.items
+    individual item objects
+
+No property may be added, deleted, renamed, normalized, or
+otherwise modified in the original data.
+
+Any normalization required by the engine must be performed only
+internally.
+
+The engine must not invent missing data.
+
+The engine must not silently hide data errors.
+
+One broken catalog or one broken card must not crash the entire
+application whenever recovery is reasonably possible.
+
+Keep the implementation modular.
+
+Avoid giant "do everything" functions.
+
+Use small functions with one clear responsibility.
+
+
+============================================================
+3. EXISTING GLOBAL DATA CONTRACT
+------------------------------------------------------------
+
+Catalogs are provided through:
+
+    window.CATALOGS
+
+Example:
+
+    window.CATALOGS.pok = {
+        title: "Покемоны",
+        items: [
+            {
+                name: "Бульбаза́вр",
+                img: "IMG_pok/bulbasaur.jpg",
+                desc: `
+                    Травяной и ядовитый покемон.
+                `,
+            },
+        ],
+    };
+
+The engine must not assume that any particular catalog exists.
+
+The engine must dynamically inspect window.CATALOGS.
+
+Do not hard-code catalog names.
+
+Do not hard-code the number of catalogs.
+
+
+============================================================
+4. EXISTING HTML INTERFACE
+------------------------------------------------------------
+
+The current HTML provides these elements.
+
+MENU:
+
+    #menuScreen
+    #catalogGrid
+
+VIEWER:
+
+    #viewerScreen
+
+    #prevBtn
+    #nextBtn
+    #backBtn
+
+    #catalogTitle
+
+    #nameBox
+    #photo
+    #description
+
+    #speakBtn
+    #counter
+
+The engine must use these existing elements.
+
+Do not require changes to index.html.
+
+Dynamic auxiliary elements may be created by app.js when required,
+especially for generated catalog-item links.
+
+
+============================================================
+5. VALID CARD DATA
+------------------------------------------------------------
+
+The following combinations are valid.
+
+A. name + img + desc
+
+    {
+        name: "...",
+        img: "...",
+        desc: "...",
+    }
+
+B. name + img
+
+    {
+        name: "...",
+        img: "...",
+    }
+
+C. img only
+
+    {
+        img: "...",
+    }
+
+D. name + desc
+
+    {
+        name: "...",
+        desc: "...",
+    }
+
+E. desc only
+
+    {
+        desc: "...",
+    }
+
+F. name only
+
+    {
+        name: "...",
+    }
+
+G. img + desc
+
+    {
+        img: "...",
+        desc: "...",
+    }
+
+Any combination of the supported fields is valid.
+
+The engine must determine the presentation from the fields
+actually available.
+
+Do not require a fixed schema beyond the supported optional fields.
+
+
+============================================================
+6. FIELD EXISTENCE
+------------------------------------------------------------
+
+A field must be considered present only according to its actual
+value.
+
+For text fields:
+
+    name
+    desc
+
+empty strings and whitespace-only strings must be treated as
+missing for presentation purposes.
+
+The engine must NOT fabricate placeholder text for missing
+name or description.
+
+If name is absent, there must be no empty name area consuming
+screen space.
+
+If description is absent, there must be no empty description area
+consuming screen space.
+
+If image is absent, do not attempt to load an image.
+
+
+IMPORTANT:
+
+Do not invent special handling for null or undefined data values.
+
+The project deliberately does not want the engine to "repair"
+null or undefined into artificial card content.
+
+Normal JavaScript behavior is acceptable for invalid values.
+
+Do not create fake values such as:
+
+    "Unknown"
+    "undefined"
+    "null"
+    "No data"
+
+
+============================================================
+7. CARD LAYOUT MODES
+------------------------------------------------------------
+
+The engine must dynamically select the most appropriate layout.
+
+The fundamental rule is:
+
+DO NOT WASTE SCREEN SPACE.
+
+If a visual element does not exist, its area must not remain as
+an empty placeholder.
+
+------------------------------------------------------------
+7.1 FULL CARD
+------------------------------------------------------------
+
+When the card has:
+
+    name
+    img
+    desc
+
+use the normal full-card layout.
+
+The existing visual design is preserved.
+
+Typical structure:
+
+    catalog title
+    name
+    image
+    description
+    controls
+
+
+------------------------------------------------------------
+7.2 NAME + IMAGE
+------------------------------------------------------------
+
+When the card has:
+
+    name
+    img
+
+but no meaningful description:
+
+Use a simplified image-focused layout.
+
+The image must receive as much available display space as
+reasonably possible.
+
+The name must be displayed below the image.
+
+Do NOT reserve the normal description area.
+
+Do NOT leave an empty description block.
+
+The name must remain visible.
+
+------------------------------------------------------------
+7.3 IMAGE ONLY
+------------------------------------------------------------
+
+When the card contains only:
+
+    img
+
+and has no meaningful name or description:
+
+Use maximum image-focused presentation.
+
+Do not display nameBox.
+
+Do not display description.
+
+Do not leave empty text areas.
+
+The image should receive the maximum available screen area.
+
+The UI must not waste space for missing information.
+
+The speech button must be disabled.
+
+Pressing Space must do nothing.
+
+------------------------------------------------------------
+7.4 NAME + DESCRIPTION WITHOUT IMAGE
+------------------------------------------------------------
+
+When a card contains:
+
+    name
+    desc
+
+but no image:
+
+Display name and description normally.
+
+Do not reserve an image area.
+
+------------------------------------------------------------
+7.5 DESCRIPTION ONLY
+------------------------------------------------------------
+
+When a card contains:
+
+    desc
+
+but no name and no image:
+
+Display the description using the available content area.
+
+Do not reserve an empty name area.
+
+Do not reserve an empty image area.
+
+Speech must read the description.
+
+------------------------------------------------------------
+7.6 NAME ONLY
+------------------------------------------------------------
+
+When a card contains:
+
+    name
+
+but no image and no description:
+
+Display the name.
+
+Do not reserve image or description areas.
+
+Speech must read the name.
+
+------------------------------------------------------------
+7.7 IMAGE + DESCRIPTION
+------------------------------------------------------------
+
+When a card contains:
+
+    img
+    desc
+
+but no name:
+
+Display image and description.
+
+Do not reserve an empty name area.
+
+Speech must read the description.
+
+
+============================================================
+8. IMAGE FORMAT SUPPORT
+------------------------------------------------------------
+
+Supported image formats:
+
+    .jpg
+    .jpeg
+    .png
+    .webp
+    .gif
+    .avif
+    .svg
+
+Extension matching must be case-insensitive.
+
+Examples:
+
+    foo.jpg
+    foo.JPG
+    foo.JpG
+
+must all be considered equivalent candidates.
+
+The engine must not rely on the extension written in the data
+being the actual format of the existing file.
+
+
+============================================================
+9. IMAGE AUTO-REPAIR / FORMAT RESOLUTION
+------------------------------------------------------------
+
+This is a critical requirement.
+
+If the data says:
+
+    img: "IMG/foo.jpg"
+
+but the actual file is:
+
+    IMG/foo.png
+
+the engine MUST find and display the PNG.
+
+The specified extension is NOT authoritative.
+
+Similarly:
+
+    img: "IMG/foo.png"
+
+must be able to resolve:
+
+    IMG/foo.jpg
+
+if that is the actual file.
+
+------------------------------------------------------------
+
+If the data says:
+
+    img: "IMG/foo"
+
+with no extension,
+
+the engine must try all supported formats.
+
+Example candidate set:
+
+    IMG/foo.jpg
+    IMG/foo.jpeg
+    IMG/foo.png
+    IMG/foo.webp
+    IMG/foo.gif
+    IMG/foo.avif
+    IMG/foo.svg
+
+------------------------------------------------------------
+
+If the data says:
+
+    img: "IMG/foo.jpg"
+
+the engine must derive the base path:
+
+    IMG/foo
+
+and try all supported extensions.
+
+The original extension is simply one candidate.
+
+------------------------------------------------------------
+
+The engine must not assume that the first candidate is the
+correct one.
+
+The first successfully loaded image wins.
+
+------------------------------------------------------------
+
+The resolver must work both under:
+
+    file://
+
+and:
+
+    http://
+    https://
+
+
+============================================================
+10. IMAGE LOADING IMPLEMENTATION
+------------------------------------------------------------
+
+Do NOT use fetch() to test whether image files exist.
+
+Use normal browser image loading behavior.
+
+A robust approach is to create temporary Image objects and
+use:
+
+    onload
+    onerror
+
+to test candidates.
+
+Once a candidate successfully loads:
+
+    photo.src = resolvedPath
+
+The temporary test image may then be discarded.
+
+The resolver must prevent stale asynchronous results from an
+older card from overwriting the image of a newer card.
+
+Example:
+
+User quickly presses:
+
+    NEXT
+    NEXT
+    NEXT
+
+An old image-loading callback must never replace the currently
+displayed image.
+
+Use a simple internal load generation/token/version mechanism.
+
+
+============================================================
+11. IMAGE NOT FOUND
+------------------------------------------------------------
+
+If no supported candidate can be loaded:
+
+Do NOT create a custom error screen.
+
+Do NOT replace the image with a fake placeholder.
+
+Do NOT throw an uncaught exception.
+
+Restore/use the originally requested image path so that the
+browser displays its normal broken-image behavior.
+
+This is intentional.
+
+A missing image must remain visibly identifiable during project
+maintenance.
+
+The application itself must continue working.
+
+A missing image must not prevent:
+
+    next card
+    previous card
+    back to menu
+    speech
+    other cards
+
+from working.
+
+
+============================================================
+12. IMAGE PATH HANDLING
+------------------------------------------------------------
+
+The engine must preserve the directory portion of the supplied
+path.
+
+Example:
+
+    IMG_pok/bulbasaur.jpg
+
+base path:
+
+    IMG_pok/bulbasaur
+
+must produce:
+
+    IMG_pok/bulbasaur.jpg
+    IMG_pok/bulbasaur.jpeg
+    IMG_pok/bulbasaur.png
+    etc.
+
+Do not move files.
+
+Do not rename files.
+
+Do not modify catalog data.
+
+
+============================================================
+13. DESCRIPTION HANDLING
+------------------------------------------------------------
+
+The current project allows HTML inside desc.
+
+Existing examples use:
+
+    <br>
+    <a href="..." target="_blank">...</a>
+
+The new engine must support existing description content
+without breaking existing catalogs.
+
+However, the project should no longer REQUIRE HTML links inside
+desc.
+
+A new optional field is introduced:
+
+    a
+
+Example:
+
+    {
+        name: "Калькулятор акустики помещений",
+        img: "IMG_proj/calc.jpg",
+        desc: `
+            Здесь разные расчёты акустики помещений.
+        `,
+        a: "https://aleksei-demon.github.io/calc_2.0/",
+    }
+
+The a field is handled by the engine.
+
+Do not require an <a> tag in desc for normal project links.
+
+
+============================================================
+14. OPTIONAL LINK FIELD "a"
+------------------------------------------------------------
+
+"a" is an optional URL field.
+
+Example:
+
+    a: "https://example.com/"
+
+If a contains a usable URL:
+
+The engine must dynamically generate a clickable button.
+
+The button must open the URL in a new browser tab/window.
+
+The generated button must be clearly visually identifiable as a
+link/action.
+
+Do not require a corresponding element in index.html.
+
+app.js may create the button dynamically.
+
+------------------------------------------------------------
+
+The generated link button must NOT be created when:
+
+    a is absent
+    a is empty
+    a is whitespace-only
+
+Do not leave an empty link container.
+
+------------------------------------------------------------
+
+The engine must ensure that the generated link is associated
+with the current card.
+
+When changing cards, the previous card's generated link must be
+removed/replaced.
+
+The engine must never allow a link from card N to remain visible
+on card N+1.
+
+------------------------------------------------------------
+
+The link must not affect speech text.
+
+The URL itself must not be spoken.
+
+The button label should be generated by the engine and should
+be short and child-friendly.
+
+Use an appropriate existing button class when possible instead
+of introducing a large new styling system.
+
+
+============================================================
+15. DESCRIPTION HTML COMPATIBILITY
+------------------------------------------------------------
+
+Existing desc values containing HTML must continue to work.
+
+The viewer may continue to assign existing trusted catalog
+description content to:
+
+    description.innerHTML
+
+Do not destroy existing project functionality by converting all
+description HTML into plain text.
+
+For speech, HTML must be converted to readable text.
+
+Example:
+
+    desc: `
+        First line.<br>
+        Second line.
+    `
+
+must be spoken approximately as:
+
+    First line. Second line.
+
+The existing getDescriptionText-style approach is acceptable.
+
+
+============================================================
+16. SECURITY / HTML SCOPE
+------------------------------------------------------------
+
+Catalog data is local project-controlled content.
+
+Do not introduce unnecessary external HTML parsing or framework
+dependencies.
+
+The engine must preserve the existing project's ability to use
+HTML inside desc.
+
+The new "a" field should preferably be rendered as a DOM-created
+anchor/button rather than concatenating arbitrary URL strings
+into innerHTML.
+
+Use DOM APIs for the generated link whenever practical.
+
+
+============================================================
+17. CATALOG VALIDATION
+------------------------------------------------------------
+
+The menu must show only usable catalogs.
+
+A catalog is usable when it has a valid items collection suitable
+for iteration.
+
+Do not show malformed catalog entries in the menu.
+
+Examples of malformed catalogs:
+
+    null
+    undefined
+    object without items
+    items that are not an array
+
+These must not crash the application.
+
+------------------------------------------------------------
+
+Empty catalog:
+
+    items: []
+
+is valid.
+
+It may be shown in the menu.
+
+Opening it must display a simple "empty catalog" state and allow
+the user to return to the menu.
+
+Do not attempt:
+
+    currentCatalog.items[0]
+
+when the array is empty.
+
+
+============================================================
+18. CATALOG TITLE
+------------------------------------------------------------
+
+Normally use:
+
+    catalog.title
+
+If title is missing or unusable:
+
+Use the catalog key as the fallback title.
+
+Example:
+
+    window.CATALOGS.pok
+
+without a usable title must display:
+
+    Пок? 
+
+NO.
+
+The actual fallback must simply be the catalog key:
+
+    pok
+
+Do not invent translated titles.
+
+Do not modify the catalog.
+
+
+============================================================
+19. MENU
+------------------------------------------------------------
+
+buildMenu() must:
+
+1. Clear the existing catalog grid.
+2. Inspect window.CATALOGS.
+3. Filter out unusable catalogs.
+4. Create one button per usable catalog.
+5. Use catalog.title when available.
+6. Otherwise use the catalog key.
+7. Open the corresponding catalog when clicked.
+
+Do not hard-code catalog buttons in app.js.
+
+
+============================================================
+20. CATALOG OPENING
+------------------------------------------------------------
+
+openCatalog(key):
+
+1. Verify that the catalog can be opened.
+2. Stop speech.
+3. Set current catalog.
+4. Set current index to 0.
+5. Hide menu.
+6. Show viewer.
+7. Render the first card.
+
+Every time a catalog is opened, start from:
+
+    index = 0
+
+Do NOT remember the previous index.
+
+
+============================================================
+21. RETURN TO MENU
+------------------------------------------------------------
+
+backToMenu():
+
+1. Stop speech.
+2. Hide viewer.
+3. Show menu.
+
+Do not destroy catalog data.
+
+Do not reload the page.
+
+Do not rebuild catalog data files.
+
+
+============================================================
+22. CARD INDEX
+------------------------------------------------------------
+
+Use zero-based internal indexing.
+
+Display the human-readable counter as:
+
+    currentIndex + 1 / total
+
+Example:
+
+    1 / 338
+
+The counter must update on every card change.
+
+
+============================================================
+23. CYCLIC NAVIGATION
+------------------------------------------------------------
+
+Navigation is circular in BOTH directions.
+
+NEXT from the last item:
+
+    last -> first
+
+PREVIOUS from the first item:
+
+    first -> last
+
+Never disable the navigation buttons because of position.
+
+The user must always be able to move in either direction.
+
+
+============================================================
+24. SPEECH SYNTHESIS
+------------------------------------------------------------
+
+Use the browser's Speech Synthesis API.
+
+The application language is Russian.
+
+Use:
+
+    ru-RU
+
+Default speech rate:
+
+    0.95
+
+------------------------------------------------------------
+
+Speech content:
+
+If card has:
+
+    name + desc
+
+speak:
+
+    name + ". " + clean description
+
+If card has only:
+
+    name
+
+speak:
+
+    name
+
+If card has only:
+
+    desc
+
+speak:
+
+    clean description
+
+If card has neither name nor desc:
+
+    speech is disabled.
+
+------------------------------------------------------------
+
+Before every new speech:
+
+    speechSynthesis.cancel()
+
+This prevents overlapping speech.
+
+------------------------------------------------------------
+
+When changing cards:
+
+    speechSynthesis.cancel()
+
+This is mandatory.
+
+If the user is listening to card N and presses NEXT,
+card N speech must stop immediately.
+
+------------------------------------------------------------
+
+If Speech Synthesis is unavailable:
+
+    disable #speakBtn
+
+The rest of the application must continue working normally.
+
+Do not crash.
+
+Do not display a large error message.
+
+
+============================================================
+25. DISABLED SPEECH STATE
+------------------------------------------------------------
+
+When a card has no speakable text:
+
+    #speakBtn.disabled = true
+
+Do not create a textual error message.
+
+Do not show a replacement text block.
+
+The button must visually use the browser/UI disabled state.
+
+When the next card contains speakable text:
+
+    #speakBtn.disabled = false
+
+------------------------------------------------------------
+
+Pressing Space while speech is disabled must do nothing.
+
+
+============================================================
+26. KEYBOARD CONTROLS
+------------------------------------------------------------
+
+When viewer is active:
+
+    ArrowRight -> next card
+    ArrowLeft  -> previous card
+    Space      -> speak current card
+    Escape     -> return to menu
+
+IMPORTANT:
+
+Escape must CALL the function:
+
+    backToMenu()
+
+not merely reference it.
+
+------------------------------------------------------------
+
+When menu is active:
+
+Viewer keyboard commands must not operate.
+
+Space must not accidentally trigger speech from a hidden card.
+
+------------------------------------------------------------
+
+For Space:
+
+    event.preventDefault()
+
+to prevent browser scrolling.
+
+Do not use automatic slideshow behavior.
+
+
+============================================================
+27. NO AUTOMATIC ADVANCEMENT
+------------------------------------------------------------
+
+Absolutely NO:
+
+    timers
+    slideshow
+    autoplay
+    automatic card changes
+    automatic speech
+    automatic progression
+
+The child controls navigation manually.
+
+Cards change only through explicit user interaction.
+
+
+============================================================
+28. DYNAMIC CARD RENDERING
+------------------------------------------------------------
+
+showCard() must be the coordinator for rendering.
+
+It should NOT contain a giant amount of unrelated logic.
+
+It should approximately perform:
+
+1. Validate/retrieve current item.
+2. Stop speech.
+3. Determine available fields.
+4. Determine card presentation mode.
+5. Update catalog title.
+6. Update name.
+7. Resolve/load image if present.
+8. Render/hide description.
+9. Render/hide generated link.
+10. Update speech button state.
+11. Update counter.
+
+
+============================================================
+29. NO EMPTY UI SPACE
+------------------------------------------------------------
+
+This is a core visual requirement.
+
+Missing data must not leave unnecessary empty blocks.
+
+Examples:
+
+No name:
+
+    nameBox is hidden or removed from layout.
+
+No description:
+
+    description is hidden or removed from layout.
+
+No image:
+
+    image element must not reserve a large empty image area.
+
+No link:
+
+    generated link button/container must not occupy space.
+
+The available screen area should automatically be used by the
+remaining content as much as the existing CSS allows.
+
+
+============================================================
+30. CSS COMPATIBILITY
+------------------------------------------------------------
+
+The existing HTML/CSS must remain the primary visual system.
+
+The engine may use the existing:
+
+    simpleImageMode
+
+class or equivalent existing mode classes.
+
+Do not replace the project's CSS architecture from JavaScript.
+
+Do not inject a giant stylesheet.
+
+Do not introduce a framework.
+
+If a tiny runtime-created element needs basic compatibility,
+reuse existing CSS classes whenever possible.
+
+The goal is to make app.js maintainable, not to create a second
+CSS engine inside JavaScript.
+
+
+============================================================
+31. STATE
+------------------------------------------------------------
+
+Keep state small and explicit.
+
+Required conceptual state:
+
+    currentCatalogKey
+    currentCatalog
+    currentIndex
+
+Additional internal state may include:
+
+    imageLoadToken
+    generatedLinkElement
+    speech availability
+    viewer/menu state if genuinely required
+
+Do not duplicate state unnecessarily.
+
+Do not maintain a second copy of catalog data.
+
+
+============================================================
+32. IMAGE LOAD RACE PROTECTION
+------------------------------------------------------------
+
+Image loading is asynchronous.
+
+The engine MUST protect against race conditions.
+
+Example:
+
+Card A requests:
+
+    A.jpg
+    A.png
+    ...
+
+Before the resolver finishes, user switches to card B.
+
+Then A's delayed onload callback must NOT replace B's image.
+
+Use a monotonically increasing render/load token.
+
+Each showCard() operation may invalidate previous image requests.
+
+Only the most recent card may update #photo.
+
+
+============================================================
+33. ERROR ISOLATION
+------------------------------------------------------------
+
+A failure in one subsystem must not unnecessarily destroy another.
+
+Examples:
+
+Broken image:
+
+    navigation still works
+    speech still works
+    back still works
+
+Speech API unavailable:
+
+    images still work
+    navigation still works
+    links still work
+
+Missing link:
+
+    card still renders
+
+Malformed catalog:
+
+    other catalogs still appear
+
+Empty catalog:
+
+    other catalogs still work
+
+One bad card:
+
+    application should remain usable whenever possible.
+
+
+============================================================
+34. CARD DATA MUST NEVER BE MUTATED
+------------------------------------------------------------
+
+This rule is ABSOLUTE.
+
+Forbidden:
+
+    item.name = ...
+    item.img = ...
+    item.desc = ...
+    item.a = ...
+
+Forbidden:
+
+    delete item.name
+    delete item.img
+
+Forbidden:
+
+    item.someInternalProperty = ...
+
+Forbidden:
+
+    modifying window.CATALOGS
+
+Forbidden:
+
+    sorting catalog.items in place
+
+Forbidden:
+
+    replacing catalog.items
+
+If sorting or transformation is ever needed internally,
+use a separate temporary structure.
+
+The current project does not require sorting.
+
+
+============================================================
+35. NO GLOBAL POLLUTION
+------------------------------------------------------------
+
+Do not create unnecessary global variables.
+
+Functions may be declared in the normal script scope because the
+project currently uses a classic script:
+
+    <script src="js/app.js"></script>
+
+Do not convert app.js into an ES module.
+
+Do not require:
+
+    import
+    export
+
+Do not overwrite existing globals except for the engine's own
+intended behavior.
+
+
+============================================================
+36. EVENT HANDLERS
+------------------------------------------------------------
+
+Connect:
+
+    #backBtn   -> backToMenu
+    #nextBtn   -> nextCard
+    #prevBtn   -> prevCard
+    #speakBtn  -> speakCurrent
+
+Use robust event handling.
+
+Do not register duplicate handlers accidentally if the engine is
+initialized more than once.
+
+The normal project currently loads app.js once, but defensive
+initialization is preferable.
+
+
+============================================================
+37. INITIALIZATION
+------------------------------------------------------------
+
+At the end of app.js:
+
+1. Acquire required DOM elements.
+2. Verify critical elements exist.
+3. Initialize event handlers.
+4. Detect Speech Synthesis support.
+5. Build the menu.
+
+If a non-critical optional DOM element is missing, do not crash
+the entire engine unnecessarily.
+
+Critical existing elements should be checked explicitly.
+
+
+============================================================
+38. REQUIRED FUNCTIONAL DECOMPOSITION
+------------------------------------------------------------
+
+The exact names may be adjusted slightly during implementation,
+but the engine should be organized into small functions similar
+to the following:
+
+STATE:
+
+    currentCatalogKey
+    currentCatalog
+    currentIndex
+
+DOM:
+
+    get / cache required elements
+
+CATALOG:
+
+    isValidCatalog()
+    getCatalogTitle()
+    buildMenu()
+    openCatalog()
+    backToMenu()
+
+CARD:
+
+    hasName()
+    hasDescription()
+    hasImage()
+    hasLink()
+    getCardMode()
+    updateCardMode()
+    showCard()
+
+IMAGE:
+
+    hasImageExtension()
+    getImageBasePath()
+    getImageCandidates()
+    resolveImage()
+    loadImage()
+
+DESCRIPTION:
+
+    getDescriptionText()
+
+LINK:
+
+    clearCardLink()
+    renderCardLink()
+
+SPEECH:
+
+    canSpeak()
+    updateSpeechState()
+    stopSpeech()
+    speakCurrent()
+
+NAVIGATION:
+
+    nextCard()
+    prevCard()
+
+INITIALIZATION:
+
+    initApp()
+
+Do not create unnecessary helper functions merely to inflate the
+file. Each function must have a clear purpose.
+
+
+============================================================
+39. CARD MODE REPRESENTATION
+------------------------------------------------------------
+
+The implementation may use internal mode names such as:
+
+    full
+    image-name
+    image-only
+    text
+    name-description
+    image-description
+    name-only
+
+The exact names are implementation details.
+
+The important requirement is that layout is determined by actual
+available content and never by assumptions about a fixed schema.
+
+
+============================================================
+40. LINK BUTTON LIFECYCLE
+------------------------------------------------------------
+
+The generated link button must be treated as part of the current
+card rendering state.
+
+On every showCard():
+
+    remove old generated link
+    determine whether current item has a
+    usable "a" field
+    create new link button if required
+
+Never leave an old link visible on another card.
+
+The link target must be taken from:
+
+    item.a
+
+Do not modify item.a.
+
+
+============================================================
+41. URL BEHAVIOR
+------------------------------------------------------------
+
+For a valid external URL:
+
+    target = "_blank"
+
+Use an appropriate security-safe relationship such as:
+
+    rel = "noopener noreferrer"
+
+Do not navigate the entire card viewer away from the application
+unless explicitly intended by the browser.
+
+The generated button should open the project/resource separately.
+
+
+============================================================
+42. DESCRIPTION + LINK
+------------------------------------------------------------
+
+A card may contain both:
+
+    desc
+    a
+
+The result should be:
+
+    description
+    generated link button
+
+The link button is separate from the description.
+
+The URL must NOT be embedded automatically into desc.
+
+Do not modify desc to insert the link.
+
+
+============================================================
+43. EXISTING HTML LINKS
+------------------------------------------------------------
+
+Existing catalog entries may already contain HTML links inside
+desc.
+
+Those entries must continue to work.
+
+The new "a" field is an additional cleaner mechanism for future
+data.
+
+Do NOT require existing catalog files to be migrated immediately.
+
+This is an extension, not a breaking rewrite.
+
+
+============================================================
+44. FILE:// COMPATIBILITY
+------------------------------------------------------------
+
+The project is routinely tested locally by opening:
+
+    index.html
+
+directly from the filesystem.
+
+Therefore:
+
+DO NOT use:
+
+    fetch()
+    XMLHttpRequest()
+    server-side APIs
+    service workers requiring a server
+    ES modules
+    npm packages
+    external runtime dependencies
+
+for core catalog or image discovery.
+
+Normal Image() loading is allowed.
+
+Normal DOM APIs are required.
+
+
+============================================================
+45. GITHUB PAGES COMPATIBILITY
+------------------------------------------------------------
+
+The same app must work when deployed on GitHub Pages.
+
+Do not assume Windows case-insensitive filesystem behavior.
+
+Image candidate resolution must be based on actual browser load
+success.
+
+Catalog paths must remain relative and untouched.
+
+
+============================================================
+46. PERFORMANCE
+------------------------------------------------------------
+
+The application may contain hundreds of cards.
+
+Example:
+
+    338 Pokémon
+
+and potentially many more.
+
+Do not preload the entire image library.
+
+Only resolve/load the image required for the current card.
+
+Do not create hundreds of Image objects permanently.
+
+Temporary Image objects used for candidate probing must be
+discarded after resolution.
+
+Menu creation should remain straightforward and lightweight.
+
+
+============================================================
+47. MAINTAINABILITY
+------------------------------------------------------------
+
+The engine is intended to be maintained manually.
+
+Prefer:
+
+    clear code
+    explicit state
+    small functions
+    descriptive names
+    simple control flow
+    comments around non-obvious logic
+
+Avoid:
+
+    clever one-liners
+    deeply nested callbacks
+    giant functions
+    unnecessary abstractions
+    frameworks
+    classes where simple functions are sufficient
+    metaprogramming
+    complex state-management systems
+
+This is a small browser application, not a framework.
+
+The implementation must be easy to diagnose after months of use.
+
+
+============================================================
+48. DEBUGGING PHILOSOPHY
+------------------------------------------------------------
+
+Do not hide project data errors.
+
+Examples:
+
+Missing image:
+
+    show browser's normal broken-image behavior.
+
+Missing card name:
+
+    simply no name block.
+
+Missing description:
+
+    simply no description block.
+
+Malformed catalog:
+
+    omit it from menu.
+
+Empty catalog:
+
+    show empty state.
+
+Broken individual card:
+
+    preserve application operation whenever possible.
+
+Do not replace errors with vague "Something went wrong" messages
+that make maintenance harder.
+
+
+============================================================
+49. DO NOT OVERENGINEER
+------------------------------------------------------------
+
+The engine must be robust, but robustness must come from:
+
+    defensive boundaries
+    validation
+    isolated functions
+    race protection
+    graceful feature disabling
+    predictable DOM updates
+
+NOT from an enormous architecture.
+
+Do not introduce:
+
+    MVC
+    Redux
+    virtual DOM
+    dependency injection framework
+    router
+    class hierarchy
+    plugin framework
+
+None of these are required.
+
+
+============================================================
+50. BACKWARD COMPATIBILITY
+------------------------------------------------------------
+
+Existing data such as:
+
+    {
+        name: "...",
+        img: "...",
+        desc: `...`
+    }
+
+must render exactly as expected.
+
+Existing extensionless paths such as:
+
+    img: "IMG/foo"
+
+must remain valid.
+
+Existing explicit paths such as:
+
+    img: "IMG/foo.jpg"
+
+must gain improved format fallback behavior.
+
+Existing HTML descriptions must continue working.
+
+Existing catalog files must not need changes.
+
+
+============================================================
+51. IMPORTANT EXISTING BUGS TO AVOID
+------------------------------------------------------------
+
+Do not duplicate functions with the same name.
+
+The old implementation contained duplicated definitions such as
+hasDescription(), updateCardMode(), and duplicated section logic.
+
+The new app.js must contain exactly one authoritative
+implementation of each function.
+
+Do not allow later duplicate function declarations to silently
+override earlier ones.
+
+
+------------------------------------------------------------
+
+Keyboard Escape MUST invoke:
+
+    backToMenu();
+
+not:
+
+    backToMenu;
+
+
+============================================================
+52. NAVIGATION + SPEECH INTERACTION
+------------------------------------------------------------
+
+Every explicit card change must stop current speech BEFORE the
+new card is rendered.
+
+Sequence:
+
+    user presses NEXT
+        ->
+    stopSpeech()
+        ->
+    change index
+        ->
+    render new card
+
+Same for PREVIOUS.
+
+Do not automatically speak the new card.
+
+The child must press:
+
+    "Озвучить"
+
+or:
+
+    Space
+
+to start speech.
+
+
+============================================================
+53. VISUAL STATE CLEANUP
+------------------------------------------------------------
+
+Every render must completely describe the current card state.
+
+Do not assume that elements from the previous card are already
+correct.
+
+For example:
+
+Card A:
+
+    name
+    image
+    description
+    link
+
+Card B:
+
+    image only
+
+After rendering B:
+
+    name must disappear
+    description must disappear
+    link must disappear
+    image remains
+
+No state from A may leak into B.
+
+
+============================================================
+54. IMAGE ELEMENT RESET
+------------------------------------------------------------
+
+Before beginning a new image resolution:
+
+The engine must prevent an old image from remaining misleadingly
+visible while the new card is resolving.
+
+The exact visual behavior may follow the existing CSS/design,
+but stale image content must not be mistaken for the current card.
+
+If no image exists for the current card:
+
+    remove/hide image appropriately
+
+If image exists but is unresolved:
+
+    use a safe loading state
+
+If all candidates fail:
+
+    restore original requested path so browser shows its normal
+    broken-image state.
+
+
+============================================================
+55. SPEECH TEXT EXTRACTION
+------------------------------------------------------------
+
+When desc contains HTML:
+
+Convert it to readable text for Speech Synthesis.
+
+For example:
+
+    <br>
+    <p>
+    <a>
+    <b>
+
+must not be spoken as literal markup.
+
+The visual description must remain HTML-compatible.
+
+
+============================================================
+56. SPEECH BUTTON STATE
+------------------------------------------------------------
+
+The button must be enabled only when:
+
+    Speech Synthesis is available
+    AND
+    current card has speakable text
+
+Speakable text means:
+
+    non-empty name
+    OR
+    non-empty description
+
+If neither exists:
+
+    disabled = true
+
+No textual error panel.
+
+
+============================================================
+57. RESILIENCE REQUIREMENT
+------------------------------------------------------------
+
+The engine should be designed around this principle:
+
+"Failure of one card must not become failure of the application."
+
+Examples:
+
+    one missing JPG -> try PNG
+    one missing PNG -> try JPG
+    all image candidates missing -> browser broken-image state
+    one empty card -> still navigate
+    one empty catalog -> still return
+    speech unavailable -> rest of app works
+    link missing -> rest of card works
+    old card's image callback -> ignored after navigation
+
+
+============================================================
+58. FINAL ACCEPTANCE TESTS
+------------------------------------------------------------
+
+The implementation is NOT considered complete until all of the
+following scenarios work.
+
+TEST 1:
+
+    {
+        name: "Test",
+        img: "IMG/test.jpg",
+        desc: "Description",
+    }
+
+Expected:
+
+    full card
+
+
+TEST 2:
+
+    {
+        name: "Test",
+        img: "IMG/test.jpg",
+    }
+
+Expected:
+
+    large image
+    name below
+    no empty description block
+
+
+TEST 3:
+
+    {
+        img: "IMG/test.jpg",
+    }
+
+Expected:
+
+    maximum image area
+    no name block
+    no description block
+    speech disabled
+
+
+TEST 4:
+
+    {
+        name: "Test",
+    }
+
+Expected:
+
+    name only
+    speech enabled
+
+
+TEST 5:
+
+    {
+        desc: "Description",
+    }
+
+Expected:
+
+    description only
+    speech enabled
+
+
+TEST 6:
+
+    {
+        name: "Test",
+        desc: "Description",
+    }
+
+Expected:
+
+    name + description
+    no image area
+
+
+TEST 7:
+
+    {
+        img: "IMG/test.jpg",
+        desc: "Description",
+    }
+
+Expected:
+
+    image + description
+    no name area
+
+
+TEST 8:
+
+    {
+        name: "Test",
+        img: "IMG/test.jpg",
+        a: "https://example.com/",
+    }
+
+Expected:
+
+    generated link button
+    opens new tab
+    no need for <a> inside desc
+
+
+TEST 9:
+
+    {
+        name: "Test",
+        img: "IMG/test.jpg",
+        desc: "Description",
+        a: "https://example.com/",
+    }
+
+Expected:
+
+    all content + generated link
+
+
+TEST 10:
+
+Data says:
+
+    IMG/test.jpg
+
+Actual file:
+
+    IMG/test.png
+
+Expected:
+
+    PNG is displayed
+
+
+TEST 11:
+
+Data says:
+
+    IMG/test.PNG
+
+Actual file:
+
+    IMG/test.jpg
+
+Expected:
+
+    JPG is displayed
+
+
+TEST 12:
+
+Data says:
+
+    IMG/test
+
+Actual file:
+
+    IMG/test.webp
+
+Expected:
+
+    WEBP is displayed
+
+
+TEST 13:
+
+Data says:
+
+    IMG/test
+
+Actual file:
+
+    IMG/test.svg
+
+Expected:
+
+    SVG is displayed
+
+
+TEST 14:
+
+No image candidate exists.
+
+Expected:
+
+    normal browser broken-image behavior
+    application continues working
+
+
+TEST 15:
+
+User rapidly presses:
+
+    NEXT
+    NEXT
+    NEXT
+
+Expected:
+
+    only the final card's image can become visible
+    no stale asynchronous image callback may overwrite it
+
+
+TEST 16:
+
+Card with speech is playing.
+
+User presses NEXT.
+
+Expected:
+
+    speech stops immediately
+    next card is displayed
+    new card is NOT automatically spoken
+
+
+TEST 17:
+
+Card has no name and no description.
+
+User presses Space.
+
+Expected:
+
+    nothing happens
+
+
+TEST 18:
+
+Speech Synthesis is unavailable.
+
+Expected:
+
+    speech button disabled
+    navigation still works
+    images still work
+    menu still works
+
+
+TEST 19:
+
+Catalog:
+
+    {
+        title: "Empty",
+        items: []
+    }
+
+Expected:
+
+    catalog may appear in menu
+    opening it does not crash
+    empty state is shown
+    back works
+
+
+TEST 20:
+
+Catalog:
+
+    {
+        title: "Broken"
+    }
+
+Expected:
+
+    catalog is not shown in menu
+
+
+TEST 21:
+
+Catalog key:
+
+    testCatalog
+
+No usable title.
+
+Expected menu title:
+
+    testCatalog
+
+
+TEST 22:
+
+At first card press PREVIOUS.
+
+Expected:
+
+    last card
+
+
+TEST 23:
+
+At last card press NEXT.
+
+Expected:
+
+    first card
+
+
+TEST 24:
+
+Press Escape in viewer.
+
+Expected:
+
+    return to menu
+
+
+TEST 25:
+
+Press Escape in menu.
+
+Expected:
+
+    no unwanted action
+
+
+TEST 26:
+
+Existing desc contains:
+
+    <br>
+    <a href="...">
+
+Expected:
+
+    existing HTML still renders correctly
+    speech reads text, not markup
+
+
+TEST 27:
+
+Return from card 173 to menu.
+
+Open same catalog again.
+
+Expected:
+
+    card 1
+
+
+TEST 28:
+
+Existing catalogs require no modifications.
+
+Expected:
+
+    all existing catalog files continue working.
+
+
+============================================================
+59. HARD CONSTRAINTS
+------------------------------------------------------------
+
+DO NOT:
+
+- modify catalog files
+- mutate catalog objects
+- mutate item objects
+- require a fixed card schema
+- require img to have an extension
+- trust an explicitly supplied image extension blindly
+- use fetch() for image detection
+- require a web server
+- require ES modules
+- require external libraries
+- add automatic slideshow
+- automatically speak cards
+- preload the entire image collection
+- hide missing images behind custom fake placeholders
+- leave empty UI blocks for missing fields
+- create duplicate function definitions
+- create giant monolithic functions
+- create a second application architecture
+- rewrite index.html
+- hard-code catalog names
+
+
+============================================================
+60. IMPLEMENTATION GOAL
+------------------------------------------------------------
+
+The final app.js should feel like a small, dependable engine:
+
+Catalog files provide data.
+
+app.js determines what exists.
+
+app.js renders only what exists.
+
+app.js repairs common image-path mistakes automatically.
+
+app.js isolates failures.
+
+app.js never modifies the source data.
+
+app.js never requires catalog-specific code.
+
+app.js never requires a server.
+
+app.js never automatically takes control away from the child.
+
+The result must be easy to maintain, easy to debug, and resilient
+to imperfect real-world catalog data.
+
+The highest priority is:
+
+    STABILITY
+    BACKWARD COMPATIBILITY
+    SIMPLE MAINTAINABLE CODE
+    NO DATA MUTATION
+    NO WASTED UI SPACE
+    MAXIMUM IMAGE FORMAT TOLERANCE
+    FAILURE ISOLATION
+
+============================================================
+END OF SPECIFICATION
+============================================================

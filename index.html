@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Классификаторы</title>
+    <link rel="icon" href="data:image/svg+xml,
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+<rect width='100' height='100' rx='16' fill='%2318A558'/>
+<path d='M22 51 L42 71 L79 29'
+      fill='none'
+      stroke='white'
+      stroke-width='14'
+      stroke-linecap='round'
+      stroke-linejoin='round'/>
+</svg>">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #234;
+            color: white;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        button {
+            -webkit-user-select: none;
+            /* Safari */
+            -moz-user-select: none;
+            /* Firefox */
+            -ms-user-select: none;
+            /* IE / Edge */
+            user-select: none;
+            /* Стандартное свойство */
+        }
+
+        /* ==========================
+   ОБЩИЕ ЭКРАНЫ
+========================== */
+
+        .screen {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ==========================
+   МЕНЮ
+========================== */
+
+        #menuScreen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        h1 {
+            margin: 20px;
+            font-size: clamp(32px, 5vw, 60px);
+        }
+
+        .catalogGrid {
+            width: min(1100px, 100%);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .catalogBtn {
+            border: none;
+            border-radius: 20px;
+            padding: 25px;
+            font-size: 28px;
+            cursor: pointer;
+
+            background: white;
+            color: #222;
+
+            transition: .2s;
+        }
+
+
+        .catalogBtn:hover {
+            transform: scale(1.03);
+        }
+
+        /* ==========================
+   ПРОСМОТР КАРТОЧКИ
+========================== */
+
+        #viewerScreen {
+            display: none;
+            padding: 0px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            background: white;
+            color: #222;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .topBar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+        }
+
+        .backBtn {
+            border: none;
+            padding: 10px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 18px;
+            background-color: #eb4d4280;
+        }
+
+        .catalogTitle {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            background: #fafafa;
+        }
+
+        .nameBox {
+            flex: 1;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: clamp(24px, 4vw, 42px);
+            font-weight: bold;
+
+            text-align: center;
+
+            border: 2px solid #ddd;
+            border-radius: 15px;
+
+            padding: 10px;
+        }
+
+        .photo {
+            width: auto;
+            height: 40vh;
+
+            object-fit: cover;
+
+            border-radius: 15px;
+            border: 2px solid #ddd;
+        }
+
+        .description {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+
+            font-size: clamp(18px, 2vw, 24px);
+            line-height: 1.6;
+        }
+
+        .bottomBar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+
+            padding: 15px;
+
+            background: #f0f0f0;
+        }
+
+        .controlBtn {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .counter {
+            color: #666;
+        }
+
+        .navBtn {
+            position: fixed;
+
+            top: 80%;
+            transform: translateY(-50%);
+
+            width: 90px;
+            height: 150px;
+            border: none;
+            font-size: 60px;
+            background: rgba(255, 255, 255, .15);
+            color: rgba(162, 181, 77, 0.263);
+            cursor: pointer;
+        }
+
+        #prevBtn {
+            left: 0;
+            border-radius: 0 25px 25px 0;
+        }
+
+        #nextBtn {
+            right: 0;
+            border-radius: 25px 0 0 25px;
+        }
+
+        @media(max-width:700px) {
+
+            .header {
+                flex-direction: column;
+            }
+
+            .photo {
+                width: 100%;
+                height: 40vh;
+            }
+
+            .navBtn {
+                width: 70px;
+                height: 120px;
+                font-size: 40px;
+            }
+        }
+
+
+
+
+        /* ========================================
+   РЕЖИМ: КАРТИНКА + НАЗВАНИЕ
+   Используется, если у объекта нет desc
+   ======================================== */
+
+
+        /* viewerScreen остаётся обычным экраном.
+   Меняем только внутреннее содержимое карточки. */
+
+        #viewerScreen.simpleImageMode .content {
+            overflow: hidden;
+        }
+
+
+        /* ========================================
+   HEADER
+   ======================================== */
+
+        #viewerScreen.simpleImageMode .header {
+
+            flex: 1;
+
+            min-height: 0;
+
+            display: flex;
+            flex-direction: column;
+
+            align-items: center;
+            justify-content: center;
+
+            gap: 10px;
+
+            padding: 10px;
+
+            overflow: hidden;
+        }
+
+
+        /* ========================================
+   КАРТИНКА
+   ======================================== */
+
+        #viewerScreen.simpleImageMode #photo {
+
+            /* Максимально используем доступное место */
+
+            flex: 1;
+
+            min-height: 0;
+            min-width: 0;
+
+            width: 100%;
+            height: 100%;
+
+            object-fit: contain;
+
+            display: block;
+
+            border-radius: 15px;
+            border: 2px solid #ddd;
+        }
+
+
+        /* ========================================
+   НАЗВАНИЕ
+   ======================================== */
+
+        #viewerScreen.simpleImageMode #nameBox {
+
+            flex: 0 0 auto;
+
+            width: 100%;
+
+            min-height: 55px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            text-align: center;
+
+            font-size: clamp(24px, 4vw, 42px);
+            font-weight: bold;
+
+            padding: 8px;
+
+            border: 2px solid #ddd;
+            border-radius: 15px;
+
+            order: 2;
+        }
+
+
+        /* ========================================
+   ОПИСАНИЕ
+   ======================================== */
+
+        #viewerScreen.simpleImageMode #description {
+
+            display: none !important;
+        }
+
+
+        /* ========================================
+   МОБИЛЬНЫЙ РЕЖИМ
+   ======================================== */
+
+        @media(max-width:700px) {
+
+            #viewerScreen.simpleImageMode .header {
+
+                gap: 8px;
+
+                padding: 8px;
+            }
+
+
+            #viewerScreen.simpleImageMode #photo {
+
+                width: 100%;
+                height: 100%;
+
+                object-fit: contain;
+            }
+
+
+            #viewerScreen.simpleImageMode #nameBox {
+
+                min-height: 50px;
+
+                font-size: clamp(22px, 7vw, 34px);
+
+                padding: 6px;
+            }
+
+            .photo {
+                width: 100%;
+                max-height: 40vh;
+                object-fit: contain;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ==========================
+     МЕНЮ
+========================== -->
+
+    <div id="menuScreen" class="screen">
+
+        <h1>📚 Классификаторы</h1>
+
+        <div class="catalogGrid" id="catalogGrid">
+            <!-- создаётся через JS -->
+        </div>
+
+    </div>
+
+    <!-- ==========================
+     ПРОСМОТРЩИК
+========================== -->
+
+    <div id="viewerScreen" class="screen">
+
+        <button id="prevBtn" class="navBtn">◀</button>
+        <button id="nextBtn" class="navBtn">▶</button>
+
+        <div class="card">
+
+            <div class="topBar">
+
+                <button id="backBtn" class="backBtn">
+                    ← Назад
+                </button>
+
+                <div id="catalogTitle" class="catalogTitle"></div>
+
+            </div>
+
+            <div class="content">
+
+                <div class="header">
+
+                    <div id="nameBox" class="nameBox"></div>
+
+                    <img id="photo" class="photo">
+
+                </div>
+
+                <div id="description" class="description"></div>
+
+            </div>
+
+            <div class="bottomBar">
+
+                <button id="speakBtn" class="controlBtn">
+                    🔊 Озвучить
+                </button>
+
+                <div id="counter" class="counter"></div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ==========================
+     ДАННЫЕ КАТАЛОГОВ
+========================== -->
+
+    <script src="js/bugs.js"></script>
+    <script src="js/houses.js"></script>
+    <script src="js/fish.js"></script>
+    <script src="js/cars.js"></script>
+    <script src="js/fig.js"></script>
+    <script src="js/an.js"></script>
+    <script src="js/chis.js"></script>
+    <script src="js/fruit.js"></script>
+    <script src="js/opt.js"></script>
+    <script src="js/pok.js"></script>
+    <script src="js/href.js"></script>
+    <script src="js/roadSigns.js"></script>
+    <script src="js/risunki.js"></script>
+    <script src="js/kolob.js"></script>
+    <!-- ==========================
+     ДВИЖОК
+========================== -->
+
+    <script src="js/app.js"></script>
+
+</body>
+
+</html>
