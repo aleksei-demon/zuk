@@ -138,7 +138,16 @@ window.CATALOGS.href = {
             `
         },
 
-
+        {
+            name: "Поезда",
+            img: "IMG_proj/200.jpg",
+            desc: `      
+      <br><br>
+      <a href="https://pelemen8264.github.io/trains/"  target="_blank">
+          🚀 Открыть поезда
+      </a>
+            `
+        },
 
 
 
