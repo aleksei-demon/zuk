@@ -4,7 +4,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.kolob = {
-    title: "Колобок",
+    title: "🙂 Колобок",
 
     items: [
 

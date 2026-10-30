@@ -4,7 +4,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.houses = {
-    title: "🪲 Дома",
+    title: "🏠 Дома",
 
     items: [
         {

@@ -4,7 +4,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.fruit = {
-    title: "🪲 Фрукты - Ягоды",
+    title: "🍓 Фрукты - Ягоды",
 
     items: [
 

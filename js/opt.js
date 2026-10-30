@@ -4,7 +4,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.opt = {
-    title: "🪲 Оптика",
+    title: "🔍 Оптика",
 
     items: [
 

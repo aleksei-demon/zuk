@@ -4,7 +4,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.risunki = {
-    title: "🪲 Мишуль",
+    title: "🐻 Мишуль",
 
     items: [
 

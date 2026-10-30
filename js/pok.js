@@ -1,7 +1,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.pok = {
-    title: "🪲 Покемоны",
+    title: "⚡ Покемоны",
 
     items: [
         { //1

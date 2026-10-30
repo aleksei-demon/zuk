@@ -4,7 +4,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.href = {
-    title: "🪲 Проекты",
+    title: "🛠️ Проекты",
 
     items: [
         {

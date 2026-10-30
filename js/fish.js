@@ -4,7 +4,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.fish = {
-    title: "🪲 Рыба",
+    title: "🐟 Рыба",
 
     items: [
         {

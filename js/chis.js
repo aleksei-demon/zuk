@@ -4,7 +4,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.chis = {
-    title: "🪲 Числа",
+    title: "🔢 Числа",
 
     items: [
 

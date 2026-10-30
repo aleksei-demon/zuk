@@ -4,7 +4,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.cars = {
-    title: "🪲 машины",
+    title: "🚗 машины",
 
     items: [
         {

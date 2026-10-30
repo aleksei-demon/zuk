@@ -4,7 +4,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.bugs = {
-    title: "🪲 Жуки",
+    title: "🐞 Жуки",
 
     items: [
 

@@ -4,7 +4,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.fig = {
-    title: "🪲 фигуры",
+    title: "🔷 фигуры",
 
     items: [
 

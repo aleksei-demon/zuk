@@ -1,7 +1,7 @@
 window.CATALOGS = window.CATALOGS || {};
 
 window.CATALOGS.sprunki = {
-    title: "🪲 Спрунки",
+    title: "🎵 Спрунки",
 
     items: [
         { //1
